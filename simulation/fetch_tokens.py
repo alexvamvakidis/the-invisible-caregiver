@@ -17,18 +17,13 @@ Usage:
 """
 
 import csv
+import sys
 import requests
 import argparse
 from pathlib import Path
 
-
-# ── Settings ──────────────────────────────────────────────────────────────────
-
-TB_HOST     = "localhost"
-TB_PORT     = 9090
-TB_USER     = "tenant@thingsboard.org"  # ThingsBoard login email
-TB_PASSWORD = "tenant"                  # ThingsBoard login password
-CSV_PATH    = "all_sensors.csv"
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from config.settings import TB_HOST, TB_PORT_API, TB_USERNAME, TB_PASSWORD, CSV_PATH, TOKENS_PATH
 
 
 # ── ThingsBoard API helpers ───────────────────────────────────────────────────
@@ -97,40 +92,38 @@ def fetch_and_save_tokens(host, port, username, password):
     device_lookup = {d["name"]: d["id"]["id"] for d in devices}
     print(f"Found {len(devices)} device(s) in ThingsBoard\n")
 
-    # Step 3: Load the CSV
-    csv_path = Path(CSV_PATH)
+    # Step 3: Load the sensor list
+    csv_path    = Path(CSV_PATH)
+    tokens_path = Path(TOKENS_PATH)
     with open(csv_path, newline="") as f:
-        reader = csv.DictReader(f)
-        fieldnames = reader.fieldnames
-        rows = list(reader)
+        sensor_ids = [row["sensor_id"] for row in csv.DictReader(f)]
 
     # Step 4: Match each sensor_id to a ThingsBoard device and fetch its token
     matched   = 0
     not_found = []
+    rows      = []
 
-    for row in rows:
-        sensor_id = row["sensor_id"]
+    for sensor_id in sensor_ids:
         device_id = device_lookup.get(sensor_id)
 
         if device_id:
-            # Fetch the access token for this device
             token = tb_get_token(base_url, jwt, device_id)
-            row["token"] = token
+            rows.append({"sensor_id": sensor_id, "token": token})
             matched += 1
             print(f"  OK  {sensor_id:<35} token: {token[:12]}…")
         else:
-            # No ThingsBoard device found with this name
+            rows.append({"sensor_id": sensor_id, "token": ""})
             not_found.append(sensor_id)
             print(f"  --  {sensor_id:<35} not found in ThingsBoard")
 
-    # Step 5: Write the updated tokens back to the CSV
-    with open(csv_path, "w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
+    # Step 5: Write tokens to sensor_tokens.csv
+    with open(tokens_path, "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=["sensor_id", "token"])
         writer.writeheader()
         writer.writerows(rows)
 
     # Summary
-    print(f"\n{matched}/{len(rows)} tokens saved to {csv_path}")
+    print(f"\n{matched}/{len(sensor_ids)} tokens saved to {tokens_path}")
 
     if not_found:
         print(f"\nNot matched ({len(not_found)}):")
@@ -147,10 +140,10 @@ if __name__ == "__main__":
     )
     parser.add_argument("--host",     default=TB_HOST,
                         help=f"ThingsBoard host (default: {TB_HOST})")
-    parser.add_argument("--port",     type=int, default=TB_PORT,
-                        help=f"ThingsBoard port (default: {TB_PORT})")
-    parser.add_argument("--user",     default=TB_USER,
-                        help=f"ThingsBoard login email (default: {TB_USER})")
+    parser.add_argument("--port",     type=int, default=TB_PORT_API,
+                        help=f"ThingsBoard port (default: {TB_PORT_API})")
+    parser.add_argument("--user",     default=TB_USERNAME,
+                        help=f"ThingsBoard login email (default: {TB_USERNAME})")
     parser.add_argument("--password", default=TB_PASSWORD,
                         help="ThingsBoard login password")
     args = parser.parse_args()

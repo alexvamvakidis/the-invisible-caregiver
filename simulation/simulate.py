@@ -17,63 +17,44 @@ Usage:
 
 import csv
 import json
+import sys
 import random
 import argparse
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-
-# Settings
-
-SIM_INTERVAL_SEC = 5
-
-SIM_DATE = "2026-05-11"
-
-CSV_PATH = "all_sensors.csv"
-
-EVENT_FILES = {
-    "normal":  "events_normal.json",
-    "decline": "events_decline.json",
-    "hazard":  "events_hazard.json",
-}
-
-OUTPUT_FILES = {
-    "normal":  "scenario_normal.json",
-    "decline": "scenario_decline.json",
-    "hazard":  "scenario_hazard.json",
-}
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from config.settings import CSV_PATH, SIM_INTERVAL_SEC, SIM_DATE, EVENT_FILES, SCENARIO_FILES
 
 # Sensor starting point for every scenario
 BASELINE = {
-    "bathroom_motion_01":      False,
-    "bathroom_door_01":        "closed",
-    "toilet_pressure_01":      False,
-    "bathroom_water_flow_01":  False,
-    "bathroom_humidity_01":    55.0,
-    "bathroom_temperature_01": 22.0,
-    "bathroom_fall_01":        False,
-    "bathroom_cabinet_01":     "closed",
-    "bed_pressure_01":         True,    
-    "bedroom_motion_01":       False,
-    "bedroom_door_01":         "closed",
-    "bedroom_lamp_plug_01":    False,
-    "medicine_drawer_01":      "closed",
-    "bedroom_temperature_01":  20.5,
-    "bedroom_humidity_01":     45.0,
-    "living_motion_01":        False,
-    "sofa_pressure_01":        False,
-    "chair_pressure_01":       False,
-    "tv_plug_01":              False,
-    "tv_volume_01":            0,
-    "entrance_motion_01":      False,
-    "entrance_door_01":        "closed",
-    "kitchen_motion_01":       False,
-    "kitchen_temperature_01":  21.0,
-    "stove_power_01":          False,
-    "smoke_detector_01":       False,
-    "fridge_door_01":          "closed",
-    "kitchen_faucet_01":       "closed",
+    "bathroom_motion":              False,
+    "toilet_pressure":              False,
+    "bathroom_water_flow":          False,
+    "bathroom_shower_water_temp":   20.0,
+    "bathroom_humidity":            55.0,
+    "bathroom_temperature":         22.0,
+    "bathroom_fall":                False,
+    "bed_pressure":                 True,
+    "bedroom_motion":               False,
+    "bedroom_lamp_plug":            False,
+    "bedroom_temperature":          20.5,
+    "living_motion":                False,
+    "sofa_pressure":                False,
+    "sofa_pressure_2":              False,
+    "chair_pressure":               False,
+    "tv_plug":                      False,
+    "tv_volume":                    0,
+    "entrance_motion":              False,
+    "entrance_door":                True,
+    "kitchen_motion":               False,
+    "kitchen_temperature":          21.0,
+    "stove_power":                  False,
+    "smoke_detector":               False,
+    "fridge_door":                  True,
+    "kitchen_faucet":               True,
+    "kitchen_medication_cabinet":   True,
 }
 
 
@@ -115,7 +96,6 @@ def simulate(scenario, date_str):
     sensors = load_sensors()
     base_dt = datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
 
-    # Load the event list for this scenario
     ev_path = Path(EVENT_FILES[scenario])
     if not ev_path.exists():
         print(f"Error: {ev_path} not found.")
@@ -140,18 +120,25 @@ def simulate(scenario, date_str):
     # Step through the full day in SIM_INTERVAL_SEC increments
     for sec in range(0, TOTAL_SEC, SIM_INTERVAL_SEC):
 
-        # Apply every event that falls inside this time window
-        # (from the previous step up to the current step, inclusive)
+        exact_at_step: dict = {}
         for s in range(sec, sec + SIM_INTERVAL_SEC):
             for sensor_id, new_value in event_map.get(s, []):
-                state[sensor_id] = new_value  # update the sensor state
+                state[sensor_id] = new_value
+                if sensor_id not in sensors:
+                    continue
+                if s != sec:
+                    event_dt = base_dt + timedelta(seconds=s)
+                    readings.append(make_reading(sensor_id, new_value, event_dt, sensors))
+                else:
+                    exact_at_step[sensor_id] = new_value
 
-        # Current simulated timestamp
+        # Sensors whose event fired exactly on this step use the exact value.
         dt = base_dt + timedelta(seconds=sec)
-
-        # Record a reading for every sensor at this moment
         for sensor_id, sensor_meta in sensors.items():
-            value = add_noise(sensor_meta["sensor_type"], state[sensor_id])
+            if sensor_id in exact_at_step:
+                value = exact_at_step[sensor_id]
+            else:
+                value = add_noise(sensor_meta["sensor_type"], state[sensor_id])
             readings.append(make_reading(sensor_id, value, dt, sensors))
 
     # Sort readings chronologically
@@ -168,7 +155,7 @@ def simulate(scenario, date_str):
         "readings":         readings,
     }
 
-    out_path = Path(OUTPUT_FILES[scenario])
+    out_path = Path(SCENARIO_FILES[scenario])
     out_path.write_text(json.dumps(output, indent=2))
 
     steps = TOTAL_SEC // SIM_INTERVAL_SEC

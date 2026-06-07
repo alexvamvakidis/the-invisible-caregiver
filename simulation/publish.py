@@ -20,6 +20,7 @@ Usage:
 
 import csv
 import json
+import sys
 import time
 import argparse
 import paho.mqtt.client as mqtt
@@ -27,28 +28,19 @@ from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from config.settings import TB_HOST, TB_PORT_MQTT, TOKENS_PATH, SCENARIO_FILES, SIM_INTERVAL_SEC
 
-# Settings 
 
-TB_HOST  = "localhost"
-TB_PORT  = 1883                    
-TB_TOPIC = "v1/devices/me/telemetry"  
+# Settings
 
-PUBLISH_INTERVAL_SEC = 5
-
-CSV_PATH = "all_sensors.csv"
-
-SCENARIO_FILES = {
-    "normal":  "scenario_normal.json",
-    "decline": "scenario_decline.json",
-    "hazard":  "scenario_hazard.json",
-}
+TB_TOPIC = "v1/devices/me/telemetry"
 
 
 # Load sensor tokens from CSV 
 
 def load_tokens():
-    with open(CSV_PATH, newline="") as f:
+    with open(TOKENS_PATH, newline="") as f:
         return {row["sensor_id"]: row["token"] for row in csv.DictReader(f)}
 
 
@@ -141,7 +133,7 @@ def publish(scenario, host, port, interval, dry_run):
     else:
         print(f"  Broker   : mqtt://{host}:{port}")
         print(f"  Topic    : {TB_TOPIC}")
-        print(f"  Tokens   : per-sensor (from {CSV_PATH})")
+        print(f"  Tokens   : per-sensor (from {TOKENS_PATH})")
         print(f"  Interval : {interval}s between batches")
     print(f"{'─'*55}\n")
 
@@ -202,14 +194,14 @@ if __name__ == "__main__":
     parser.add_argument(
         "--port",
         type=int,
-        default=TB_PORT,
-        help=f"MQTT broker port (default: {TB_PORT})"
+        default=TB_PORT_MQTT,
+        help=f"MQTT broker port (default: {TB_PORT_MQTT})"
     )
     parser.add_argument(
         "--interval",
         type=float,
-        default=PUBLISH_INTERVAL_SEC,
-        help=f"Seconds between batches (default: {PUBLISH_INTERVAL_SEC})"
+        default=SIM_INTERVAL_SEC,
+        help=f"Seconds between batches (default: {SIM_INTERVAL_SEC})"
     )
     parser.add_argument(
         "--dry-run",
