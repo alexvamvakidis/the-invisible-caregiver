@@ -25,6 +25,7 @@ SCENARIO_FILES = {
 }
 
 EVENT_FILES = {
+    
     "normal":  _ROOT / "simulation" / "events" / "events_normal.json",
     "decline": _ROOT / "simulation" / "events" / "events_decline.json",
     "hazard":  _ROOT / "simulation" / "events" / "events_hazard.json",
