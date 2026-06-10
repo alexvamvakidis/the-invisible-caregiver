@@ -1,0 +1,12 @@
+read the data as they are given from the formatter to the LLM:
+
+py -c "
+from cli import _load_scenario_summary
+from llm.formatter import format_for_llm
+s = _load_scenario_summary('hazard')
+print(format_for_llm(s))
+"
+
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+ 
