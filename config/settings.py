@@ -25,7 +25,6 @@ SCENARIO_FILES = {
 }
 
 EVENT_FILES = {
-    
     "normal":  _ROOT / "simulation" / "events" / "events_normal.json",
     "decline": _ROOT / "simulation" / "events" / "events_decline.json",
     "hazard":  _ROOT / "simulation" / "events" / "events_hazard.json",
@@ -68,9 +67,9 @@ THRESHOLDS = {
 }
 
 #  LLM 
-LLM_HOST    = "http://localhost:11434"  # Ollama
-LLM_MODEL   = "gemma3:latest"
-MAX_TOKENS  = 512
+LLM_HOST   = "http://localhost:11434"  # ← not localhost, since Python runs in Docker
+LLM_MODEL = "qwen2.5:3b"
+MAX_TOKENS = 4098
 
 #  Alerts 
 ALERT_EMAIL = "caregiver@example.com"

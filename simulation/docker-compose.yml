@@ -1,0 +1,38 @@
+services:
+  # ThingsBoard - IoT Platform (with embedded PostgreSQL)
+  thingsboard:
+    image: thingsboard/tb-postgres:latest
+    ports:
+      - "9090:9090"
+      - "1883:1883"
+    environment:
+      TB_QUEUE_TYPE: in-memory
+    volumes:
+      - tb_data:/data
+      - tb_logs:/var/log/thingsboard
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9090"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # Python simulation service
+  simulation:
+    build:
+      context: ..
+      dockerfile: simulation/Dockerfile
+    environment:
+      TB_HOST: thingsboard
+      TB_PORT_API: 9090
+      TB_PORT_MQTT: 1883
+    depends_on:
+      - thingsboard
+    volumes:
+      - ..:/app
+    stdin_open: true
+    tty: true
+    command: /bin/bash
+
+volumes:
+  tb_data:
+  tb_logs:

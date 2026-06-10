@@ -27,7 +27,8 @@ import paho.mqtt.client as mqtt
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
-
+# Make sure it's UTC-aware before converting
+from datetime import timezone
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from config.settings import TB_HOST, TB_PORT_MQTT, TOKENS_PATH, SCENARIO_FILES, SIM_INTERVAL_SEC
 
@@ -81,10 +82,10 @@ def disconnect_clients(clients):
 
 def publish_reading(client, reading, timestamp_dt, topic):
     payload = {
-        "ts":     int(timestamp_dt.timestamp() * 1000),  # milliseconds
+        "ts": int(timestamp_dt.astimezone(timezone.utc).timestamp() * 1000),
         "values": {reading["sensor_id"]: reading["value"]}
     }
-
+    print(f"    PAYLOAD: {json.dumps(payload)}")  # ← add this
     result = client.publish(topic, json.dumps(payload), qos=1)
     return "ok" if result.rc == mqtt.MQTT_ERR_SUCCESS else f"rc_{result.rc}"
 

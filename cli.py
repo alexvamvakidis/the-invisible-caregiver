@@ -26,7 +26,8 @@ from llm.client import audit, narrate
 # Scenario loader
 
 def _load_scenario_summary(name: str) -> dict:
-    """Build a sensor summary dict from a local scenario JSON file."""
+    """Build a sensor summary dict from a local scenario JSON file,
+    matching the output format of collector.summarize()."""
     path = SCENARIO_FILES.get(name)
     if not path or not Path(path).exists():
         sys.exit(f"Error: scenario '{name}' not found at {path}")
@@ -34,41 +35,67 @@ def _load_scenario_summary(name: str) -> dict:
     with open(path) as f:
         data = json.load(f)
 
-    readings = data.get("readings", [])
-
-    # Group by room → sensor_id
+    # Group readings by room → sensor_id → list of {value, timestamp}
     raw: dict = {}
-    for r in readings:
+    for r in data.get("readings", []):
         room      = r.get("room", "unknown")
         sensor_id = r.get("sensor_id", "unknown")
-        value     = r.get("value")
-        raw.setdefault(room, {}).setdefault(sensor_id, []).append(value)
+        raw.setdefault(room, {}).setdefault(sensor_id, []).append({
+            "value": r.get("value"),
+            "ts":    r.get("timestamp", ""),
+        })
 
-    # Collapse to summary stats (mirrors data/collector.summarize)
     summary: dict = {}
     for room, sensors in raw.items():
         summary[room] = {}
-        for sid, values in sensors.items():
-            if not values:
+        for sid, entries in sensors.items():
+            if not entries:
                 continue
-            if isinstance(values[0], (int, float)) and not isinstance(values[0], bool):
+
+            first_val = entries[0]["value"]
+
+            # Continuous sensor
+            if isinstance(first_val, (int, float)) and not isinstance(first_val, bool):
+                floats = [e["value"] for e in entries]
                 summary[room][sid] = {
                     "type": "continuous",
-                    "min": min(values),
-                    "max": max(values),
-                    "avg": round(sum(values) / len(values), 2),
+                    "min":  min(floats),
+                    "max":  max(floats),
+                    "avg":  round(sum(floats) / len(floats), 2),
                 }
+
+            # Boolean/state sensor — extract transitions with timestamps
             else:
                 events, prev = [], None
-                for v in values:
-                    if v != prev:
-                        events.append({"value": v})
-                        prev = v
+                for e in entries:
+                    if e["value"] != prev:
+                        events.append({"value": e["value"], "time": e["ts"]})
+                        prev = e["value"]
+
+                # Annotate with duration between transitions
+                annotated = []
+                for i, ev in enumerate(events):
+                    duration_sec = None
+                    if i + 1 < len(events):
+                        try:
+                            from datetime import datetime, timezone
+                            t1 = datetime.fromisoformat(ev["time"].replace("Z", "+00:00"))
+                            t2 = datetime.fromisoformat(events[i+1]["time"].replace("Z", "+00:00"))
+                            duration_sec = int((t2 - t1).total_seconds())
+                        except Exception:
+                            pass
+                    annotated.append({
+                        "value":        ev["value"],
+                        "time":         ev["time"],
+                        "duration_sec": duration_sec,
+                    })
+
                 summary[room][sid] = {
-                    "type": "boolean",
-                    "current": values[-1],
-                    "events": events,
+                    "type":    "boolean",
+                    "current": entries[-1]["value"],
+                    "events":  annotated,
                 }
+
     return summary
 
 
@@ -77,7 +104,7 @@ def _load_scenario_summary(name: str) -> dict:
 def _load_live_summary(window_ms=None) -> dict:
     from data.collector import get_all_rooms, summarize
     raw = get_all_rooms(window_ms)
-    return summarize(raw)
+    return  summarize(raw)
 
 
 # Commands 

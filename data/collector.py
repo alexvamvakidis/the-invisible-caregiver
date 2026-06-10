@@ -27,12 +27,16 @@ def get_device_id_map(token: str) -> dict:
     return name_to_id
 
 def get_telemetry(device_id, keys, token, window_ms=None):
-    now = int(time.time() * 1000)
     r = requests.get(
         f"{TB_URL}/api/plugins/telemetry/DEVICE/{device_id}/values/timeseries",
         headers={"Authorization": f"Bearer {token}"},
-        params={"keys": ",".join(keys), "startTs": now - (window_ms or HISTORY_WINDOW_MS),
-                "endTs": now, "limit": 10000, "orderBy": "ASC"}
+        params={
+            "keys":      ",".join(keys),
+            "startTs":   1780963200000,   # 2026-06-09T00:00:00Z
+            "endTs":     1781049600000,   # 2026-06-10T00:00:00Z
+            "limit":     50000,
+            "orderBy":   "ASC"
+        }
     )
     return r.json()
 
