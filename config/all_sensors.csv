@@ -4,6 +4,7 @@ toilet_pressure,toilet_seat_pressure,bathroom,toilet_seat,boolean
 bathroom_water_flow,water_flow,bathroom,sink_shower_pipe,boolean
 bathroom_shower_water_temp,temp_sensor,bathroom,in_showerhead,celsius
 bathroom_temperature,temperature_sensor,bathroom,bathroom_wall_near_shower,celsius
+bathroom_humidity,humidity_sensor,bathroom,bathroom_wall_near_shower,percent
 bed_pressure,bed_pressure_mat,bedroom,under_mattress,boolean
 bedroom_motion,PIR_motion,bedroom,upper_right_corner,boolean
 bedroom_lamp_plug,smart_plug_power_monitor,bedroom,bedside_lamp,boolean

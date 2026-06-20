@@ -1,11 +1,9 @@
 {
   "scenario": "Acute Hazard",
-  "description": "Two dangerous events: (A) stove left on at 18:35 while resident falls asleep in bedroom — kitchen hits 39.8°C, smoke alarm fires at 20:00, stove finally off at 20:04 after 85 min unattended. (B) 3:00 AM front-door exit — resident outside 41 minutes before returning.",
+  "description": "Two dangerous events: (A) stove left on at 18:35 while resident falls asleep in bedroom — kitchen overheats, smoke alarm fires at 20:00, stove finally off at 20:04 after 85 min unattended. (B) 3:00 AM front-door exit — resident outside 41 minutes before returning.",
   "events": [
     {"time": "00:00:00", "sensor_id": "bed_pressure", "value": true, "note": "baseline: sleeping"},
-    {"time": "00:00:00", "sensor_id": "bedroom_temperature", "value": 19.5, "note": "baseline bedroom temp"},
-    {"time": "00:00:00", "sensor_id": "kitchen_temperature", "value": 21.0, "note": "baseline kitchen temp"},
-    {"time": "00:00:00", "sensor_id": "bathroom_temperature", "value": 20.0, "note": "baseline bathroom temp"},
+
     {"time": "03:00:15", "sensor_id": "bed_pressure", "value": false, "note": "wakes up, gets out of bed"},
     {"time": "03:00:25", "sensor_id": "bedroom_motion", "value": true},
     {"time": "03:03:16", "sensor_id": "bedroom_motion", "value": false},
@@ -20,6 +18,7 @@
     {"time": "03:50:06", "sensor_id": "bedroom_motion", "value": true},
     {"time": "03:52:06", "sensor_id": "bed_pressure", "value": true, "note": "back in bed"},
     {"time": "03:53:06", "sensor_id": "bedroom_motion", "value": false},
+
     {"time": "07:00:14", "sensor_id": "bed_pressure", "value": false, "note": "wakes up normally"},
     {"time": "07:00:28", "sensor_id": "bedroom_motion", "value": true},
     {"time": "07:02:20", "sensor_id": "bedroom_motion", "value": false},
@@ -33,10 +32,8 @@
     {"time": "07:36:14", "sensor_id": "fridge_door", "value": false},
     {"time": "07:38:15", "sensor_id": "fridge_door", "value": true},
     {"time": "07:40:14", "sensor_id": "stove_power", "value": true},
-    {"time": "07:45:00", "sensor_id": "kitchen_temperature", "value": 23.5, "note": "temp rises slightly from cooking"},
     {"time": "07:52:08", "sensor_id": "stove_power", "value": false, "note": "stove off — breakfast done"},
     {"time": "07:53:10", "sensor_id": "kitchen_motion", "value": false},
-    {"time": "07:55:00", "sensor_id": "kitchen_temperature", "value": 22.5, "note": "kitchen cooling back down"},
     {"time": "07:55:09", "sensor_id": "bedroom_motion", "value": true, "note": "goes to bedroom for medication"},
     {"time": "07:56:18", "sensor_id": "kitchen_medication_cabinet", "value": false},
     {"time": "07:57:07", "sensor_id": "kitchen_medication_cabinet", "value": true},
@@ -44,6 +41,7 @@
     {"time": "08:10:20", "sensor_id": "living_motion", "value": true, "note": "moves to living room"},
     {"time": "08:11:07", "sensor_id": "sofa_pressure", "value": true},
     {"time": "08:30:13", "sensor_id": "tv_plug", "value": true},
+
     {"time": "14:00:07", "sensor_id": "sofa_pressure", "value": false, "note": "gets up after ~5.5h on sofa"},
     {"time": "14:00:10", "sensor_id": "living_motion", "value": false},
     {"time": "14:00:15", "sensor_id": "tv_plug", "value": false},
@@ -54,6 +52,7 @@
     {"time": "14:10:10", "sensor_id": "living_motion", "value": true, "note": "back to living room"},
     {"time": "14:11:20", "sensor_id": "sofa_pressure", "value": true},
     {"time": "14:11:28", "sensor_id": "tv_plug", "value": true},
+
     {"time": "18:30:11", "sensor_id": "sofa_pressure", "value": false, "note": "gets up for dinner prep"},
     {"time": "18:30:15", "sensor_id": "living_motion", "value": false},
     {"time": "18:30:23", "sensor_id": "tv_plug", "value": false},
@@ -61,31 +60,22 @@
     {"time": "18:32:09", "sensor_id": "fridge_door", "value": false},
     {"time": "18:33:17", "sensor_id": "fridge_door", "value": true},
     {"time": "18:35:20", "sensor_id": "stove_power", "value": true, "note": "HAZARD: stove on"},
-    {"time": "18:50:10", "sensor_id": "kitchen_temperature", "value": 28.5},
     {"time": "18:55:17", "sensor_id": "kitchen_motion", "value": false, "note": "HAZARD: leaves kitchen with stove on"},
     {"time": "18:56:09", "sensor_id": "bedroom_motion", "value": true},
     {"time": "18:57:13", "sensor_id": "bed_pressure", "value": true, "note": "lies down in bed — falls asleep"},
     {"time": "18:58:00", "sensor_id": "bedroom_motion", "value": false, "note": "no more motion — asleep"},
-    {"time": "19:10:16", "sensor_id": "kitchen_temperature", "value": 31.0},
-    {"time": "19:30:12", "sensor_id": "kitchen_temperature", "value": 34.2},
-    {"time": "19:50:07", "sensor_id": "kitchen_temperature", "value": 37.5},
+
     {"time": "20:00:09", "sensor_id": "smoke_detector", "value": true, "note": "ALARM: smoke detected"},
-    {"time": "20:00:20", "sensor_id": "kitchen_temperature", "value": 39.8},
     {"time": "20:01:12", "sensor_id": "bedroom_motion", "value": true, "note": "woken by alarm, gets out of bed"},
     {"time": "20:01:18", "sensor_id": "bed_pressure", "value": false},
     {"time": "20:03:13", "sensor_id": "kitchen_motion", "value": true, "note": "rushes into kitchen"},
     {"time": "20:04:05", "sensor_id": "stove_power", "value": false, "note": "turns off stove"},
-    {"time": "20:04:15", "sensor_id": "kitchen_temperature", "value": 38.0},
     {"time": "20:05:18", "sensor_id": "smoke_detector", "value": false},
     {"time": "20:07:00", "sensor_id": "kitchen_motion", "value": false},
     {"time": "20:10:15", "sensor_id": "bedroom_motion", "value": true, "note": "returns to bedroom"},
     {"time": "20:11:06", "sensor_id": "bedroom_lamp_plug", "value": true},
     {"time": "20:20:17", "sensor_id": "bedroom_lamp_plug", "value": false},
     {"time": "20:22:08", "sensor_id": "bed_pressure", "value": true, "note": "back in bed"},
-    {"time": "20:22:23", "sensor_id": "bedroom_motion", "value": false},
-    {"time": "20:40:17", "sensor_id": "kitchen_temperature", "value": 35.0, "note": "kitchen cooling"},
-    {"time": "21:10:11", "sensor_id": "kitchen_temperature", "value": 30.0},
-    {"time": "21:50:11", "sensor_id": "kitchen_temperature", "value": 25.0},
-    {"time": "23:00:10", "sensor_id": "kitchen_temperature", "value": 22.0}
+    {"time": "20:22:23", "sensor_id": "bedroom_motion", "value": false}
   ]
 }

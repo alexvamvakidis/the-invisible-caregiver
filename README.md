@@ -1,156 +1,192 @@
 # The Invisible Caregiver
 
-A context-aware assisted living system for elderly residents. Sensor data from a smart home is collected via [ThingsBoard](https://thingsboard.io/), summarised, and fed to a local LLM ([Ollama](https://ollama.com/) / gemma3) that acts as a safety auditor and conversational assistant.
+Smart home sensor monitoring for elderly residents. A local LLM reads sensor data from ThingsBoard and answers a caretaker's questions via the terminal.
 
 ---
 
-## Prerequisites
+## How it works
 
-| Requirement | Notes |
+```
+Sensors (simulated)
+      │  MQTT
+      ▼
+ ThingsBoard          ← stores all sensor readings
+      │  REST API
+      ▼
+ data/collector.py    ← pulls the last 1h or 24h of readings and summarises them
+      │
+      ▼
+ llm/client.py        ← sends the summary to Ollama (local LLM)
+      │
+      ├─ Safety Auditor (report) → structured JSON alert: severity + bullet points
+      └─ Narrator      (chat)   → conversational answers to caretaker questions
+             │
+             └─ cli.py   — terminal interface
+```
+
+Scenario mode bypasses ThingsBoard entirely — `cli.py` reads pre-generated per-sensor JSON files from `simulation/sensor_data/` and feeds the same summarised format to the LLM.
+
+---
+
+## What you need
+
+- Python 3.11+
+- Docker (for ThingsBoard)
+- Ollama (local LLM)
+
+---
+
+## Step 1 — Install Python dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+## Step 2 — Install and start Ollama
+
+**Linux / macOS**
+```bash
+curl -fsSL https://ollama.com/install.sh | sh
+```
+
+**Windows** (run in PowerShell):
+```powershell
+irm https://ollama.com/install.ps1 | iex
+```
+
+Pull the model (~5 GB):
+```bash
+ollama pull gemma3:latest
+```
+
+---
+
+## Step 3 — Start ThingsBoard
+
+```bash
+docker compose -f simulation/docker-compose.yml up -d
+```
+
+Wait ~60 seconds, then open [http://localhost:8080](http://localhost:8080).  
+Login: `tenant@thingsboard.org` / `tenant`
+
+---
+
+## Step 4 — Import devices
+
+1. Go to **Entities → Devices** → click **+** → **Import devices**
+2. Upload `config/all_sensors.csv`
+3. Map: Column 1 → Name, Column 2 → Type, Column 3 → Label → **Import**
+
+---
+
+## Step 5 — Fetch device tokens
+
+```bash
+python simulation/fetch_tokens.py
+```
+
+This writes `config/sensor_tokens.csv`. Run once after importing devices.
+
+---
+
+## Step 6 — Generate and publish a scenario
+
+```bash
+python simulation/simulate.py hazard
+python simulation/publish.py hazard
+```
+
+`publish.py` accepts optional flags:
+
+| Flag | Description |
 |---|---|
-| Python 3.11+ | |
-| [Ollama](https://ollama.com/) running locally | `ollama pull gemma3` |
-| Docker + Compose | only for the live ThingsBoard stack |
+| `--interval N` | Pause N seconds between batches (default: 0 — bulk upload) |
+| `--dry-run` | Print readings without sending to ThingsBoard |
 
-```bash
-pip install requests paho-mqtt
-```
-
----
-
-## How the simulation works
-
-Since there are no real sensors, the simulation pipeline produces realistic sensor data and pushes it into ThingsBoard so the rest of the system can consume it as if it were live.
-
-There are three scenarios, each representing a different day in the resident's life:
-
-| Scenario | What it models |
+| Scenario | What it simulates |
 |---|---|
-| `normal` | Healthy routine — regular meals, sleep, hygiene |
-| `decline` | Subtle changes — skipped meals, reduced activity |
-| `hazard` | Acute event — smoke detected, prolonged inactivity |
-
-Each scenario is driven by an **event file** (`simulation/events/events_<name>.json`). An event is a simple record: at a given time of day, a sensor changes to a given value. Everything between events stays at a baseline, with small noise added to continuous sensors (temperature, humidity) to look realistic.
-
-```
-events_hazard.json  →  simulate.py  →  scenario_hazard.json  →  publish.py  →  ThingsBoard
-```
-
-**`simulate.py`** steps through a full 24-hour day in 5-second increments, applies the event changes on top of the baseline, and writes every reading to a scenario JSON file. This is purely local — no network needed.
-
-**`publish.py`** reads that JSON and replays each timestamped reading to ThingsBoard over MQTT, one batch per time step. Each sensor authenticates with its own device token (stored in `config/all_sensors.csv`).
-
-To create a new scenario, edit the events JSON and re-run `simulate.py`.
+| `normal` | Healthy day — regular wake-up, medication, meals, sleep |
+| `decline` | Subtle problems — late wake-up, missed meds, sedentary 7+ h |
+| `hazard` | Acute danger — stove on 85 min, smoke alarm, 3 AM door exit |
 
 ---
 
-## Running the simulation
-
-### Step 1 — Start ThingsBoard
+## Terminal usage
 
 ```bash
-cd simulation
-docker compose up -d
-```
-
-Wait ~60 s, then open http://localhost:9090.  
-Default credentials: `tenant@thingsboard.org` / `tenant`
-
-### Step 2 — Create devices in ThingsBoard
-
-Add devices from the left side menu Entities -> Devices, then click the plus icon top left and import the file: `config/all_sensors.csv`. In the model that opens, click Browse to find the file and upload, then click Continue. Click Continue in the Import Configuration also. In the collumns type, set the first as Name, second as Type and the  third as Label. Keep the rest the same and click Continue. The devices should be added succesfully.
-
-### Step 3 — Fetch device tokens
-
-```bash
-cd simulation
-python fetch_tokens.py
-```
-
-This logs into ThingsBoard, finds each device by name, and writes its access token into `config/sensor_tokens.csv`. Run this once after creating the devices.
-
-### Step 4 — Generate a scenario
-
-```bash
-cd simulation
-python simulate.py normal
-python simulate.py decline
-python simulate.py hazard
-python simulate.py normal --date 2026-06-01   # specific date
-```
-
-Output is written to `simulation/scenarios/scenario_<name>.json`.
-
-### Step 5 — Publish to ThingsBoard
-
-```bash
-cd simulation
-python publish.py hazard
-python publish.py hazard --interval 0   # indicates the step of each publication of data (0 -> all at once)
-```
-
----
-
-## Querying the data
-
-Once data is in ThingsBoard, use the CLI to run the LLM on it:
-
-```bash
-# Safety audit on live ThingsBoard data (last hour)
+# Safety audit — live ThingsBoard data (last 1 hour)
 python cli.py report
 
-# Interactive Q&A on live data
+# Safety audit on a local scenario (no ThingsBoard needed)
+python cli.py report --scenario hazard
+python cli.py report --scenario decline
+python cli.py report --scenario normal
+
+# Interactive Q&A — live ThingsBoard data (last 24 hours)
 python cli.py chat
 
-# Use a local scenario file instead of ThingsBoard (no live stack needed)
-python cli.py report --scenario hazard
-python cli.py chat   --scenario decline
+# Interactive Q&A on a local scenario
+python cli.py chat --scenario decline
 
-# Print the raw sensor summary
-python cli.py summary --scenario normal
-
-# Pull a longer window
-python cli.py report --window-ms 7200000   # last 2 hours
+# Load a pre-fetched JSON file instead of hitting ThingsBoard or a scenario
+python cli.py report --file fetch_hour.json
+python cli.py chat   --file fetch_day.json
 ```
 
----
+**Example output:**
+```
+$ python cli.py report --scenario hazard
 
-## Verification
+[ALERT] severity=critical
+--------------------------
+  • Smoke detector activated at 20:00
+  • Stove on unattended for 85 minutes (18:35–20:00)
+  • Nighttime door exit at 03:00 (41 min outside)
+```
+
+### All CLI commands
+
+| Command | Description |
+|---|---|
+| `report` | Safety Auditor — structured alert for the last hour |
+| `chat` | Narrator — interactive Q&A about the last 24 hours |
+| `fetch` | Pull live ThingsBoard data and write JSON files for offline use |
+
+### `fetch` — save ThingsBoard data for offline use
 
 ```bash
-# Every event in the events file appears in the generated scenario
-python verify.py events --scenario hazard
+# Fetch both windows (writes fetch_hour.json and fetch_day.json)
+python cli.py fetch
 
-# Every event value appears in ThingsBoard telemetry (requires live TB)
-python verify.py tb --scenario hazard
+# Fetch only one window
+python cli.py fetch --hour
+python cli.py fetch --day
 
-# Every sensor value matches its declared unit type
-python verify.py types --scenario normal
-
-# Run all three
-python verify.py all --scenario decline
+# Custom output paths
+python cli.py fetch --hour --out-hour h.json --day --out-day d.json
 ```
+
+### Common flags
+
+| Flag | Applies to | Description |
+|---|---|---|
+| `--scenario normal\|decline\|hazard` | report, chat | Use a local scenario file instead of ThingsBoard |
+| `--file FILE` | report, chat | Load a JSON summary file directly |
+| `--window-ms N` | report, chat | Override the telemetry window in milliseconds |
+| `--raw` | chat | Print raw LLM output before parsing (debugging) |
 
 ---
 
 ## Configuration
 
-All constants are in `config/settings.py`.
+All settings are in `config/settings.py`.
 
 | Setting | Default | Description |
 |---|---|---|
 | `TB_HOST` | `localhost` | ThingsBoard host |
-| `TB_PORT_API` | `9090` | ThingsBoard HTTP API port |
-| `TB_PORT_MQTT` | `1883` | ThingsBoard MQTT port |
-| `LLM_HOST` | `http://localhost:11434` | Ollama base URL |
+| `TB_PORT_API` | `8080` | ThingsBoard HTTP port |
+| `LLM_HOST` | `http://localhost:11434` | Ollama URL |
 | `LLM_MODEL` | `gemma3:latest` | Model name |
-| `HISTORY_WINDOW_MS` | `3_600_000` | Telemetry window pulled by the CLI (1 h) |
-| `SIM_INTERVAL_SEC` | `5` | Seconds between simulation time steps |
-
-## Ollama setup
-
-```bash
-ollama
-
-ollama run <model>
-```

@@ -20,6 +20,7 @@ ALL_SENSOR_IDS = {sid for ids in SENSOR_KEYS_BY_ROOM.values() for sid in ids}
 UNIT_VALIDATORS = {
     "boolean": lambda v: isinstance(v, bool),
     "celsius": lambda v: isinstance(v, (int, float)) and not isinstance(v, bool),
+    "percent": lambda v: isinstance(v, (int, float)) and not isinstance(v, bool),
     "watt":    lambda v: isinstance(v, (int, float)) and not isinstance(v, bool),
     "kwh":     lambda v: isinstance(v, (int, float)) and not isinstance(v, bool),
     "%rh":     lambda v: isinstance(v, (int, float)) and not isinstance(v, bool),
@@ -28,51 +29,76 @@ UNIT_VALIDATORS = {
 }
 
 
-def _load_json(path) -> dict:
-    p = Path(path)
+def _load_scenario_readings(name: str) -> list[dict]:
+    """
+    Load all readings from per-sensor JSON files for a scenario.
+    Returns a flat list of dicts, each with sensor_id, unit, timestamp, value.
+    Exits with an error message if the scenario directory does not exist.
+    """
+    data_dir = Path(SCENARIO_FILES[name])
+    if not data_dir.exists():
+        sys.exit(
+            f"Scenario '{name}' not found at {data_dir}.\n"
+            f"Run: python simulation/simulate.py {name}"
+        )
+
+    readings = []
+    for json_file in sorted(data_dir.glob("*.json")):
+        data = json.loads(json_file.read_text())
+        unit      = data.get("unit", "")
+        sensor_id = data["sensor_id"]
+        for r in data.get("readings", []):
+            readings.append({
+                "sensor_id": sensor_id,
+                "unit":      unit,
+                "timestamp": r["timestamp"],
+                "value":     r["value"],
+            })
+    return readings
+
+
+def _load_event_file(name: str) -> dict:
+    p = Path(EVENT_FILES[name])
     if not p.exists():
-        sys.exit(f"File not found: {path}")
-    with open(p) as f:
-        return json.load(f)
+        sys.exit(f"Event file not found: {p}")
+    return json.loads(p.read_text())
 
-
-# Check if events happen in scenario
 
 def _time_only(timestamp: str) -> str:
     """Extract HH:MM:SS from an ISO timestamp or normalise a bare HH:MM string."""
-    t = timestamp.split("T")[-1].rstrip("Z")  # "07:05:00" or already "07:05"
+    t = timestamp.split("T")[-1].rstrip("Z")
     return t if t.count(":") == 2 else t + ":00"
 
 
+# ── Check 1: every event appears in the scenario readings ────────────────────
+
 def check_events_in_scenario(name: str) -> dict:
     """
-    Verify that every sensor_id, value, and time in the events file
-    appears in the scenario readings. Time is compared as HH:MM:SS only,
-    ignoring the date part of scenario timestamps.
+    Verify that every (sensor_id, time, value) in the events file has a
+    matching reading in the scenario data.
     """
-    scenario = _load_json(SCENARIO_FILES[name])
-    events   = _load_json(EVENT_FILES[name])
+    readings = _load_scenario_readings(name)
+    events   = _load_event_file(name)
 
-    # Build a set of (sensor_id, time_only, value) from scenario for fast lookup
     scenario_index = {
         (r["sensor_id"], _time_only(r["timestamp"]), r["value"])
-        for r in scenario.get("readings", [])
+        for r in readings
     }
 
     missing = []
     for ev in events.get("events", []):
         key = (ev["sensor_id"], _time_only(ev["time"]), ev["value"])
         if key not in scenario_index:
-            missing.append({"sensor_id": ev["sensor_id"], "time": ev["time"], "value": ev["value"]})
+            missing.append({
+                "sensor_id": ev["sensor_id"],
+                "time":      ev["time"],
+                "value":     ev["value"],
+            })
 
-    return {
-        "ok":     len(missing) == 0,
-        "missing": missing,
-    }
+    return {"ok": len(missing) == 0, "missing": missing}
 
 
-
-# Check if thingsboard telemetry matches events
+# ── Check 2: ThingsBoard telemetry matches events ────────────────────────────
 
 def check_thingsboard_vs_events(name: str) -> dict:
     """
@@ -80,23 +106,19 @@ def check_thingsboard_vs_events(name: str) -> dict:
     verify that the expected value appears somewhere in the live telemetry.
     Uses a 24-hour window to cover a full simulated day.
     """
-    import time as _time
     from data.collector import get_token, get_device_id_map, get_telemetry
 
-    events_data = _load_json(EVENT_FILES[name])
+    events_data = _load_event_file(name)
     events      = events_data.get("events", [])
 
-    token     = get_token()
+    token      = get_token()
     device_map = get_device_id_map(token)
 
     matched, missing, skipped = [], [], []
 
-    # Group events by sensor so we fetch telemetry once per device
     by_sensor: dict = {}
     for ev in events:
-        sid = ev["sensor_id"]
-        by_sensor.setdefault(sid, []).append(ev)
-        
+        by_sensor.setdefault(ev["sensor_id"], []).append(ev)
 
     for sid, evs in by_sensor.items():
         if sid not in ALL_SENSOR_IDS:
@@ -114,10 +136,7 @@ def check_thingsboard_vs_events(name: str) -> dict:
         for ev in evs:
             expected = str(ev["value"]).lower()
             entry = {"sensor_id": sid, "time": ev["time"], "expected": ev["value"]}
-            if expected in tb_values:
-                matched.append(entry)
-            else:
-                missing.append(entry)
+            (matched if expected in tb_values else missing).append(entry)
 
     return {
         "ok":      len(missing) == 0,
@@ -127,22 +146,21 @@ def check_thingsboard_vs_events(name: str) -> dict:
     }
 
 
-#  Check sensor values in scenario match their declared unit 
+# ── Check 3: sensor value types match their declared unit ────────────────────
 
 def check_sensor_types(name: str) -> dict:
     """
     Verify that each reading's value is consistent with its declared unit,
-    and that every sensor_id in the scenario is present in SENSOR_KEYS_BY_ROOM.
+    and that every sensor_id is present in SENSOR_KEYS_BY_ROOM.
     """
-    scenario = _load_json(SCENARIO_FILES[name])
-    readings = scenario.get("readings", [])
+    readings = _load_scenario_readings(name)
 
-    type_errors_seen = {}   
-    unknown_sensors  = set()
+    type_errors_seen: dict = {}
+    unknown_sensors:  set  = set()
 
     for r in readings:
         sid   = r["sensor_id"]
-        unit  = r.get("unit", "")
+        unit  = r["unit"]
         value = r["value"]
 
         if sid not in ALL_SENSOR_IDS:
@@ -157,16 +175,14 @@ def check_sensor_types(name: str) -> dict:
                 "example":    value,
             }
 
-    type_errors = list(type_errors_seen.values())
-
     return {
-        "ok":              len(type_errors) == 0 and len(unknown_sensors) == 0,
-        "type_errors":     type_errors,
+        "ok":              len(type_errors_seen) == 0 and len(unknown_sensors) == 0,
+        "type_errors":     list(type_errors_seen.values()),
         "unknown_sensors": sorted(unknown_sensors),
     }
 
 
-#  Pretty printer 
+# ── Pretty printer ────────────────────────────────────────────────────────────
 
 def _print_result(title: str, result: dict) -> None:
     status = "PASS" if result["ok"] else "FAIL"
@@ -185,7 +201,8 @@ def _print_result(title: str, result: dict) -> None:
             print(f"  {field}: {val}")
 
 
-#  CLI 
+# ── CLI ───────────────────────────────────────────────────────────────────────
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Verify scenario and ThingsBoard data")
     parser.add_argument(
@@ -202,9 +219,9 @@ def main() -> None:
     name = args.scenario
 
     checks = {
-        "events": ("Events → Scenario coverage",  check_events_in_scenario),
-        "tb":     ("ThingsBoard vs Events",        check_thingsboard_vs_events),
-        "types":  ("Sensor type correctness",      check_sensor_types),
+        "events": ("Events -> Scenario coverage", check_events_in_scenario),
+        "tb":     ("ThingsBoard vs Events",       check_thingsboard_vs_events),
+        "types":  ("Sensor type correctness",     check_sensor_types),
     }
 
     to_run = list(checks.items()) if args.check == "all" else [(args.check, checks[args.check])]

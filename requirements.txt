@@ -1,0 +1,9 @@
+# IoT platform communication
+paho-mqtt>=1.6.1          # MQTT publish to ThingsBoard (simulation/publish.py)
+requests>=2.31.0          # ThingsBoard REST API + Ollama HTTP (data/collector.py, llm/client.py)
+
+# Telegram bot interface
+python-telegram-bot>=20.0 # Telegram bot (bot.py)
+
+# Standard library only below this line — no extra installs needed:
+#   csv, json, math, random, argparse, pathlib, datetime, collections, asyncio, logging

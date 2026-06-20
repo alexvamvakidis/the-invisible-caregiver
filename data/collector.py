@@ -27,14 +27,26 @@ def get_device_id_map(token: str) -> dict:
     return name_to_id
 
 def get_telemetry(device_id, keys, token, window_ms=None):
-    now = int(time.time() * 1000)
+    now      = int(time.time() * 1000)
+    start_ms = now - (window_ms or HISTORY_WINDOW_MS)
     r = requests.get(
         f"{TB_URL}/api/plugins/telemetry/DEVICE/{device_id}/values/timeseries",
         headers={"Authorization": f"Bearer {token}"},
-        params={"keys": ",".join(keys), "startTs": now - (window_ms or HISTORY_WINDOW_MS),
-                "endTs": now, "limit": 10000, "orderBy": "ASC"}
+        params={
+            "keys":     ",".join(keys),
+            "startTs":  start_ms,
+            "endTs":    now,
+            "agg":      "NONE",
+            "limit":    10000,
+            "orderBy":  "ASC",
+        },
     )
-    return r.json()
+    data = r.json()
+    # Post-filter: guarantee the window is respected regardless of TB version.
+    return {
+        key: [p for p in readings if start_ms <= p["ts"] <= now]
+        for key, readings in data.items()
+    }
 
 def get_all_rooms(window_ms=None) -> dict:
     token = get_token()
