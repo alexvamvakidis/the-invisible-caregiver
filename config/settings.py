@@ -75,5 +75,3 @@ LLM_HOST    = "http://localhost:11434"  # Ollama
 LLM_MODEL   = "gemma3:latest"
 MAX_TOKENS  = 2048
 
-#  Telegram bot
-TELEGRAM_TOKEN = "8722638289:AAEnwDIj2Hh4kXPTSTafg0queIMi6tzqyXU"   # set this to your token from @BotFather
