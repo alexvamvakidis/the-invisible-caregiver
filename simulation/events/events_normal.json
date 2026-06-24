@@ -2,90 +2,448 @@
   "scenario": "Normal Day",
   "description": "Consistent healthy routine: wakes 07:00, showers, takes medication, watches TV, walks outside, cooks dinner, bed 22:00.",
   "events": [
-    {"time": "07:00:14", "sensor_id": "bed_pressure", "value": false, "note": "wakes up"},
-    {"time": "07:00:28", "sensor_id": "bedroom_motion", "value": true},
-    {"time": "07:01:05", "sensor_id": "bedroom_lamp_plug", "value": true},
-    {"time": "07:05:19", "sensor_id": "bathroom_motion", "value": true, "note": "enters bathroom"},
-    {"time": "07:07:07", "sensor_id": "toilet_pressure", "value": true},
-    {"time": "07:12:11", "sensor_id": "toilet_pressure", "value": false},
-    {"time": "07:13:18", "sensor_id": "bathroom_water_flow", "value": true, "note": "shower starts"},
-    {"time": "07:28:22", "sensor_id": "bathroom_water_flow", "value": false, "note": "shower ends"},
-    {"time": "07:31:14", "sensor_id": "kitchen_medication_cabinet", "value": false, "note": "takes medication"},
-    {"time": "07:32:07", "sensor_id": "kitchen_medication_cabinet", "value": true},
-    {"time": "07:36:09", "sensor_id": "bathroom_motion", "value": false},
-    {"time": "07:40:13", "sensor_id": "kitchen_motion", "value": true, "note": "enters kitchen for breakfast"},
-    {"time": "07:41:08", "sensor_id": "fridge_door", "value": false},
-    {"time": "07:43:16", "sensor_id": "fridge_door", "value": true},
-    {"time": "07:44:11", "sensor_id": "kitchen_faucet", "value": false},
-    {"time": "07:45:06", "sensor_id": "kitchen_faucet", "value": true},
-    {"time": "07:46:18", "sensor_id": "stove_power", "value": true},
-    {"time": "07:58:09", "sensor_id": "stove_power", "value": false, "note": "stove off — breakfast done"},
-    {"time": "07:59:14", "sensor_id": "kitchen_motion", "value": false},
-    {"time": "08:00:07", "sensor_id": "bedroom_motion", "value": true},
-    {"time": "08:03:12", "sensor_id": "bedroom_motion", "value": false},
-    {"time": "08:04:05", "sensor_id": "bedroom_lamp_plug", "value": false},
-    {"time": "08:10:20", "sensor_id": "living_motion", "value": true, "note": "moves to living room"},
-    {"time": "08:11:07", "sensor_id": "sofa_pressure", "value": true},
-    {"time": "08:30:13", "sensor_id": "tv_plug", "value": true},
-    {"time": "10:00:18", "sensor_id": "sofa_pressure", "value": false},
-    {"time": "10:01:11", "sensor_id": "bathroom_motion", "value": true},
-    {"time": "10:02:09", "sensor_id": "toilet_pressure", "value": true},
-    {"time": "10:07:14", "sensor_id": "toilet_pressure", "value": false},
-    {"time": "10:08:16", "sensor_id": "bathroom_water_flow", "value": true},
-    {"time": "10:09:20", "sensor_id": "bathroom_water_flow", "value": false},
-    {"time": "10:10:08", "sensor_id": "bathroom_motion", "value": false},
-    {"time": "10:11:15", "sensor_id": "sofa_pressure", "value": true},
-    {"time": "12:00:09", "sensor_id": "sofa_pressure", "value": false},
-    {"time": "12:00:14", "sensor_id": "tv_plug", "value": false},
-    {"time": "12:00:22", "sensor_id": "kitchen_motion", "value": true, "note": "kitchen for lunch"},
-    {"time": "12:02:11", "sensor_id": "fridge_door", "value": false},
-    {"time": "12:03:17", "sensor_id": "fridge_door", "value": true},
-    {"time": "12:05:08", "sensor_id": "stove_power", "value": true},
-    {"time": "12:20:19", "sensor_id": "stove_power", "value": false, "note": "stove off — lunch done"},
-    {"time": "12:21:13", "sensor_id": "kitchen_faucet", "value": false},
-    {"time": "12:22:07", "sensor_id": "kitchen_faucet", "value": true},
-    {"time": "12:23:18", "sensor_id": "kitchen_motion", "value": false},
-    {"time": "12:30:06", "sensor_id": "living_motion", "value": true},
-    {"time": "12:31:10", "sensor_id": "sofa_pressure", "value": true},
-    {"time": "12:31:19", "sensor_id": "tv_plug", "value": true},
-    {"time": "14:00:07", "sensor_id": "sofa_pressure", "value": false, "note": "goes for afternoon walk"},
-    {"time": "14:00:14", "sensor_id": "tv_plug", "value": false},
-    {"time": "14:01:09", "sensor_id": "entrance_motion", "value": true},
-    {"time": "14:02:16", "sensor_id": "entrance_door", "value": false},
-    {"time": "14:03:08", "sensor_id": "entrance_door", "value": true},
-    {"time": "14:04:11", "sensor_id": "entrance_motion", "value": false, "note": "left home — 86 min walk"},
-    {"time": "15:30:14", "sensor_id": "entrance_motion", "value": true, "note": "returns home"},
-    {"time": "15:31:09", "sensor_id": "entrance_door", "value": false},
-    {"time": "15:32:17", "sensor_id": "entrance_door", "value": true},
-    {"time": "15:33:06", "sensor_id": "entrance_motion", "value": false},
-    {"time": "15:34:12", "sensor_id": "living_motion", "value": true},
-    {"time": "15:35:07", "sensor_id": "sofa_pressure", "value": true},
-    {"time": "15:35:19", "sensor_id": "tv_plug", "value": true},
-    {"time": "18:30:11", "sensor_id": "sofa_pressure", "value": false, "note": "gets up for dinner prep"},
-    {"time": "18:30:18", "sensor_id": "tv_plug", "value": false},
-    {"time": "18:30:27", "sensor_id": "kitchen_motion", "value": true},
-    {"time": "18:32:09", "sensor_id": "fridge_door", "value": false},
-    {"time": "18:33:17", "sensor_id": "fridge_door", "value": true},
-    {"time": "18:35:20", "sensor_id": "stove_power", "value": true},
-    {"time": "18:55:08", "sensor_id": "stove_power", "value": false, "note": "stove off — dinner done"},
-    {"time": "18:56:14", "sensor_id": "kitchen_faucet", "value": false},
-    {"time": "18:57:09", "sensor_id": "kitchen_faucet", "value": true},
-    {"time": "18:58:21", "sensor_id": "kitchen_motion", "value": false},
-    {"time": "19:00:13", "sensor_id": "living_motion", "value": true},
-    {"time": "19:01:07", "sensor_id": "sofa_pressure", "value": true},
-    {"time": "19:01:19", "sensor_id": "tv_plug", "value": true},
-    {"time": "21:30:09", "sensor_id": "sofa_pressure", "value": false, "note": "evening routine begins"},
-    {"time": "21:30:16", "sensor_id": "tv_plug", "value": false},
-    {"time": "21:31:11", "sensor_id": "bathroom_motion", "value": true},
-    {"time": "21:32:08", "sensor_id": "toilet_pressure", "value": true},
-    {"time": "21:37:14", "sensor_id": "toilet_pressure", "value": false},
-    {"time": "21:38:09", "sensor_id": "bathroom_water_flow", "value": true},
-    {"time": "21:42:17", "sensor_id": "bathroom_water_flow", "value": false},
-    {"time": "21:43:06", "sensor_id": "bathroom_motion", "value": false},
-    {"time": "22:00:15", "sensor_id": "bedroom_motion", "value": true, "note": "goes to bed"},
-    {"time": "22:01:08", "sensor_id": "bedroom_lamp_plug", "value": true},
-    {"time": "22:10:19", "sensor_id": "bedroom_lamp_plug", "value": false},
-    {"time": "22:12:07", "sensor_id": "bed_pressure", "value": true, "note": "asleep"},
-    {"time": "22:12:22", "sensor_id": "bedroom_motion", "value": false}
+    {
+      "time": "07:00:14",
+      "sensor_id": "bed_pressure",
+      "value": false,
+      "note": "wakes up"
+    },
+    {
+      "time": "07:00:28",
+      "sensor_id": "bedroom_motion",
+      "value": true
+    },
+    {
+      "time": "07:01:05",
+      "sensor_id": "bedroom_lamp_plug",
+      "value": true
+    },
+    {
+      "time": "07:05:19",
+      "sensor_id": "bathroom_motion",
+      "value": true,
+      "note": "enters bathroom"
+    },
+    {
+      "time": "07:07:07",
+      "sensor_id": "toilet_pressure",
+      "value": true
+    },
+    {
+      "time": "07:12:11",
+      "sensor_id": "toilet_pressure",
+      "value": false
+    },
+    {
+      "time": "07:13:18",
+      "sensor_id": "bathroom_water_flow",
+      "value": true,
+      "note": "shower starts"
+    },
+    {
+      "time": "07:28:22",
+      "sensor_id": "bathroom_water_flow",
+      "value": false,
+      "note": "shower ends"
+    },
+    {
+      "time": "07:31:14",
+      "sensor_id": "kitchen_medication_cabinet",
+      "value": true,
+      "note": "takes medication"
+    },
+    {
+      "time": "07:32:07",
+      "sensor_id": "kitchen_medication_cabinet",
+      "value": false
+    },
+    {
+      "time": "07:36:09",
+      "sensor_id": "bathroom_motion",
+      "value": false
+    },
+    {
+      "time": "07:40:13",
+      "sensor_id": "kitchen_motion",
+      "value": true,
+      "note": "enters kitchen for breakfast"
+    },
+    {
+      "time": "07:41:08",
+      "sensor_id": "fridge_door",
+      "value": true
+    },
+    {
+      "time": "07:43:16",
+      "sensor_id": "fridge_door",
+      "value": false
+    },
+    {
+      "time": "07:44:11",
+      "sensor_id": "kitchen_faucet",
+      "value": true
+    },
+    {
+      "time": "07:45:06",
+      "sensor_id": "kitchen_faucet",
+      "value": false
+    },
+    {
+      "time": "07:46:18",
+      "sensor_id": "stove_power",
+      "value": true
+    },
+    {
+      "time": "07:58:09",
+      "sensor_id": "stove_power",
+      "value": false,
+      "note": "stove off \u2014 breakfast done"
+    },
+    {
+      "time": "07:59:14",
+      "sensor_id": "kitchen_motion",
+      "value": false
+    },
+    {
+      "time": "08:00:07",
+      "sensor_id": "bedroom_motion",
+      "value": true
+    },
+    {
+      "time": "08:03:12",
+      "sensor_id": "bedroom_motion",
+      "value": false
+    },
+    {
+      "time": "08:04:05",
+      "sensor_id": "bedroom_lamp_plug",
+      "value": false
+    },
+    {
+      "time": "08:10:20",
+      "sensor_id": "living_motion",
+      "value": true,
+      "note": "moves to living room"
+    },
+    {
+      "time": "08:11:07",
+      "sensor_id": "sofa_pressure",
+      "value": true
+    },
+    {
+      "time": "08:30:13",
+      "sensor_id": "tv_plug",
+      "value": true
+    },
+    {
+      "time": "10:00:18",
+      "sensor_id": "sofa_pressure",
+      "value": false
+    },
+    {
+      "time": "10:01:11",
+      "sensor_id": "bathroom_motion",
+      "value": true
+    },
+    {
+      "time": "10:02:09",
+      "sensor_id": "toilet_pressure",
+      "value": true
+    },
+    {
+      "time": "10:07:14",
+      "sensor_id": "toilet_pressure",
+      "value": false
+    },
+    {
+      "time": "10:08:16",
+      "sensor_id": "bathroom_water_flow",
+      "value": true
+    },
+    {
+      "time": "10:09:20",
+      "sensor_id": "bathroom_water_flow",
+      "value": false
+    },
+    {
+      "time": "10:10:08",
+      "sensor_id": "bathroom_motion",
+      "value": false
+    },
+    {
+      "time": "10:11:15",
+      "sensor_id": "sofa_pressure",
+      "value": true
+    },
+    {
+      "time": "12:00:09",
+      "sensor_id": "sofa_pressure",
+      "value": false
+    },
+    {
+      "time": "12:00:14",
+      "sensor_id": "tv_plug",
+      "value": false
+    },
+    {
+      "time": "12:00:22",
+      "sensor_id": "kitchen_motion",
+      "value": true,
+      "note": "kitchen for lunch"
+    },
+    {
+      "time": "12:02:11",
+      "sensor_id": "fridge_door",
+      "value": true
+    },
+    {
+      "time": "12:03:17",
+      "sensor_id": "fridge_door",
+      "value": false
+    },
+    {
+      "time": "12:05:08",
+      "sensor_id": "stove_power",
+      "value": true
+    },
+    {
+      "time": "12:20:19",
+      "sensor_id": "stove_power",
+      "value": false,
+      "note": "stove off \u2014 lunch done"
+    },
+    {
+      "time": "12:21:13",
+      "sensor_id": "kitchen_faucet",
+      "value": true
+    },
+    {
+      "time": "12:22:07",
+      "sensor_id": "kitchen_faucet",
+      "value": false
+    },
+    {
+      "time": "12:23:18",
+      "sensor_id": "kitchen_motion",
+      "value": false
+    },
+    {
+      "time": "12:30:06",
+      "sensor_id": "living_motion",
+      "value": true
+    },
+    {
+      "time": "12:31:10",
+      "sensor_id": "sofa_pressure",
+      "value": true
+    },
+    {
+      "time": "12:31:19",
+      "sensor_id": "tv_plug",
+      "value": true
+    },
+    {
+      "time": "14:00:07",
+      "sensor_id": "sofa_pressure",
+      "value": false,
+      "note": "goes for afternoon walk"
+    },
+    {
+      "time": "14:00:14",
+      "sensor_id": "tv_plug",
+      "value": false
+    },
+    {
+      "time": "14:01:09",
+      "sensor_id": "entrance_motion",
+      "value": true
+    },
+    {
+      "time": "14:02:16",
+      "sensor_id": "entrance_door",
+      "value": true
+    },
+    {
+      "time": "14:03:08",
+      "sensor_id": "entrance_door",
+      "value": false
+    },
+    {
+      "time": "14:04:11",
+      "sensor_id": "entrance_motion",
+      "value": false,
+      "note": "left home \u2014 86 min walk"
+    },
+    {
+      "time": "15:30:14",
+      "sensor_id": "entrance_motion",
+      "value": true,
+      "note": "returns home"
+    },
+    {
+      "time": "15:31:09",
+      "sensor_id": "entrance_door",
+      "value": true
+    },
+    {
+      "time": "15:32:17",
+      "sensor_id": "entrance_door",
+      "value": false
+    },
+    {
+      "time": "15:33:06",
+      "sensor_id": "entrance_motion",
+      "value": false
+    },
+    {
+      "time": "15:34:12",
+      "sensor_id": "living_motion",
+      "value": true
+    },
+    {
+      "time": "15:35:07",
+      "sensor_id": "sofa_pressure",
+      "value": true
+    },
+    {
+      "time": "15:35:19",
+      "sensor_id": "tv_plug",
+      "value": true
+    },
+    {
+      "time": "18:30:11",
+      "sensor_id": "sofa_pressure",
+      "value": false,
+      "note": "gets up for dinner prep"
+    },
+    {
+      "time": "18:30:18",
+      "sensor_id": "tv_plug",
+      "value": false
+    },
+    {
+      "time": "18:30:27",
+      "sensor_id": "kitchen_motion",
+      "value": true
+    },
+    {
+      "time": "18:32:09",
+      "sensor_id": "fridge_door",
+      "value": true
+    },
+    {
+      "time": "18:33:17",
+      "sensor_id": "fridge_door",
+      "value": false
+    },
+    {
+      "time": "18:35:20",
+      "sensor_id": "stove_power",
+      "value": true
+    },
+    {
+      "time": "18:55:08",
+      "sensor_id": "stove_power",
+      "value": false,
+      "note": "stove off \u2014 dinner done"
+    },
+    {
+      "time": "18:56:14",
+      "sensor_id": "kitchen_faucet",
+      "value": true
+    },
+    {
+      "time": "18:57:09",
+      "sensor_id": "kitchen_faucet",
+      "value": false
+    },
+    {
+      "time": "18:58:21",
+      "sensor_id": "kitchen_motion",
+      "value": false
+    },
+    {
+      "time": "19:00:13",
+      "sensor_id": "living_motion",
+      "value": true
+    },
+    {
+      "time": "19:01:07",
+      "sensor_id": "sofa_pressure",
+      "value": true
+    },
+    {
+      "time": "19:01:19",
+      "sensor_id": "tv_plug",
+      "value": true
+    },
+    {
+      "time": "21:30:09",
+      "sensor_id": "sofa_pressure",
+      "value": false,
+      "note": "evening routine begins"
+    },
+    {
+      "time": "21:30:16",
+      "sensor_id": "tv_plug",
+      "value": false
+    },
+    {
+      "time": "21:31:11",
+      "sensor_id": "bathroom_motion",
+      "value": true
+    },
+    {
+      "time": "21:32:08",
+      "sensor_id": "toilet_pressure",
+      "value": true
+    },
+    {
+      "time": "21:37:14",
+      "sensor_id": "toilet_pressure",
+      "value": false
+    },
+    {
+      "time": "21:38:09",
+      "sensor_id": "bathroom_water_flow",
+      "value": true
+    },
+    {
+      "time": "21:42:17",
+      "sensor_id": "bathroom_water_flow",
+      "value": false
+    },
+    {
+      "time": "21:43:06",
+      "sensor_id": "bathroom_motion",
+      "value": false
+    },
+    {
+      "time": "22:00:15",
+      "sensor_id": "bedroom_motion",
+      "value": true,
+      "note": "goes to bed"
+    },
+    {
+      "time": "22:01:08",
+      "sensor_id": "bedroom_lamp_plug",
+      "value": true
+    },
+    {
+      "time": "22:10:19",
+      "sensor_id": "bedroom_lamp_plug",
+      "value": false
+    },
+    {
+      "time": "22:12:07",
+      "sensor_id": "bed_pressure",
+      "value": true,
+      "note": "asleep"
+    },
+    {
+      "time": "22:12:22",
+      "sensor_id": "bedroom_motion",
+      "value": false
+    }
   ]
 }
