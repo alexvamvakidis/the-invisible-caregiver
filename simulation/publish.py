@@ -92,9 +92,13 @@ def connect_clients(tokens, host, port):
 
 
 def disconnect_clients(clients):
+    # Queue DISCONNECT on all clients first so all 23 threads start shutting
+    # down concurrently, then join them — total wait ≈ 1 thread's select()
+    # timeout instead of N × timeout.
+    for client in clients.values():
+        client.disconnect()
     for client in clients.values():
         client.loop_stop()
-        client.disconnect()
 
 
 def publish_reading(client, sensor_id, value, timestamp_dt):
@@ -102,7 +106,10 @@ def publish_reading(client, sensor_id, value, timestamp_dt):
         "ts":     int(timestamp_dt.timestamp() * 1000),
         "values": {sensor_id: value},
     }
-    result = client.publish(TB_TOPIC, json.dumps(payload), qos=1)
+    # QoS 0: fire-and-forget — appropriate for bulk historical data.
+    # QoS 1 causes paho to retry every unACKed message on reconnect, which
+    # floods ThingsBoard with duplicates when thousands of messages are queued.
+    result = client.publish(TB_TOPIC, json.dumps(payload), qos=0)
     return "ok" if result.rc == mqtt.MQTT_ERR_SUCCESS else f"rc_{result.rc}"
 
 
@@ -144,7 +151,7 @@ def clear_telemetry(sensor_ids: list[str]) -> None:
             skipped += 1
             continue
         r = requests.delete(
-            f"{TB_URL}/api/plugins/telemetry/DEVICE/{device_id}/timeseries/values",
+            f"{TB_URL}/api/plugins/telemetry/DEVICE/{device_id}/timeseries/delete",
             headers=headers,
             params={"keys": sensor_id, "deleteAllDataForKeys": "true"},
         )
@@ -155,7 +162,7 @@ def clear_telemetry(sensor_ids: list[str]) -> None:
     print(f"  Cleared {cleared} sensor(s), skipped {skipped} (not registered).\n")
 
 
-def publish(scenario, host, port, interval, dry_run, clear):
+def publish(scenario, host, port, interval, dry_run, clear=True, verbose=False):
     tokens = load_tokens()
 
     missing = [sid for sid, tok in tokens.items() if not tok]
@@ -199,31 +206,55 @@ def publish(scenario, host, port, interval, dry_run, clear):
         print(f"Connected {len(clients)}/{len(tokens)} sensor clients\n")
 
     today = datetime.today().date()
+    skipped_sensors: set = set()
+    published_count = 0
+
     for i, (ts_str, batch) in enumerate(batches):
         dt = datetime.fromisoformat(ts_str.replace("Z", ""))
         dt = dt.replace(year=today.year, month=today.month, day=today.day)
-        print(f"[{i+1}/{len(batches)}]  {dt.strftime('%H:%M:%S')}  —  {len(batch)} sensor(s)")
+
+        if verbose:
+            print(f"[{i+1}/{len(batches)}]  {dt.strftime('%H:%M:%S')}  —  {len(batch)} sensor(s)")
 
         for r in batch:
             sensor_id = r["sensor_id"]
-            print(f"  {sensor_id}: {r['value']}")
+
+            if verbose:
+                print(f"  {sensor_id}: {r['value']}")
 
             if not dry_run:
                 client = clients.get(sensor_id)
                 if client:
                     result = publish_reading(client, sensor_id, r["value"], dt)
-                    print(f"    → MQTT {result}")
+                    published_count += 1
+                    if verbose:
+                        print(f"    → MQTT {result}")
                 else:
-                    print(f"    → SKIPPED (no token for {sensor_id})")
+                    skipped_sensors.add(sensor_id)
 
-        print()
+        if verbose:
+            print()
+
+        # compact progress every 5 % of batches
+        if not verbose and ((i + 1) % max(1, len(batches) // 20) == 0 or i + 1 == len(batches)):
+            pct = (i + 1) / len(batches) * 100
+            print(f"  {pct:5.1f}%  [{i+1}/{len(batches)}]  {dt.strftime('%H:%M:%S')}", end="\r", flush=True)
+
         if i < len(batches) - 1:
             time.sleep(interval)
+
+    if not verbose:
+        print()  # newline after the progress line
+
+    if skipped_sensors:
+        print(f"\nSkipped (no token): {', '.join(sorted(skipped_sensors))}")
 
     if not dry_run:
         disconnect_clients(clients)
 
-    print(f"Done — {len(batches)} batches published for '{meta['scenario']}'.")
+    label = "previewed (dry-run)" if dry_run else "published"
+    print(f"Done — {total_readings:,} readings {label} for '{meta['scenario']}' "
+          f"({len(batches)} batches).")
 
 
 if __name__ == "__main__":
@@ -239,9 +270,12 @@ if __name__ == "__main__":
                         help="Seconds between batches (default: 0 — bulk upload)")
     parser.add_argument("--dry-run", action="store_true",
                         help="Print readings without connecting to ThingsBoard")
-    parser.add_argument("--clear", action="store_true",
-                        help="Delete all existing telemetry for these sensors before publishing "
-                             "(avoids mixing data from multiple scenario runs)")
+    parser.add_argument("--no-clear", action="store_true",
+                        help="Skip deleting existing telemetry before publishing "
+                             "(by default all prior data for these sensors is cleared first)")
+    parser.add_argument("--verbose", action="store_true",
+                        help="Print every sensor reading (default: compact progress bar)")
     args = parser.parse_args()
 
-    publish(args.scenario, args.host, args.port, args.interval, args.dry_run, args.clear)
+    publish(args.scenario, args.host, args.port, args.interval, args.dry_run,
+            clear=not args.no_clear, verbose=args.verbose)

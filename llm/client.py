@@ -95,7 +95,6 @@ def audit(
 
     user_text = AUDIT_USER.format(
         window_context=json.dumps(window_ctx, indent=2),
-        carryover_section=format_carryover_section(carryover),
         summary=narrative_txt,
     )
 

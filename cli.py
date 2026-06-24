@@ -37,7 +37,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from config.settings import SCENARIO_FILES, SENSOR_DATA_DIR, HISTORY_WINDOW_MS, NARRATOR_WINDOW_MS
+from config.settings import SCENARIO_FILES, SENSOR_DATA_DIR, HISTORY_WINDOW_MS, NARRATOR_WINDOW_MS, ALL_SENSOR_KEYS, TB_URL
 from llm.client import audit, narrate
 
 
@@ -133,6 +133,48 @@ def _load_live_summary(window_ms: int) -> tuple[dict, int, int]:
 
 
 #  Commands
+def cmd_clear(scenario: str | None) -> None:
+    """Delete all ThingsBoard telemetry for every sensor (or only those in a scenario)."""
+    import requests
+    from data.collector import get_token, get_device_id_map
+
+    if scenario:
+        data_dir = Path(SCENARIO_FILES.get(scenario, ""))
+        if not data_dir.exists():
+            sys.exit(f"Error: scenario '{scenario}' not found at {data_dir}.")
+        sensor_ids = [
+            json.loads(f.read_text())["sensor_id"]
+            for f in sorted(data_dir.glob("*.json"))
+        ]
+    else:
+        sensor_ids = list(ALL_SENSOR_KEYS)
+
+    label = f"scenario '{scenario}'" if scenario else "all sensors"
+    print(f"Clearing ThingsBoard telemetry for {label} ({len(sensor_ids)} sensor(s)) …")
+
+    token      = get_token()
+    device_map = get_device_id_map(token)
+    headers    = {"Authorization": f"Bearer {token}"}
+    cleared, skipped = 0, 0
+
+    for sensor_id in sensor_ids:
+        device_id = device_map.get(sensor_id)
+        if not device_id:
+            skipped += 1
+            continue
+        r = requests.delete(
+            f"{TB_URL}/api/plugins/telemetry/DEVICE/{device_id}/timeseries/delete",
+            headers=headers,
+            params={"keys": sensor_id, "deleteAllDataForKeys": "true"},
+        )
+        if r.ok:
+            cleared += 1
+        else:
+            print(f"  Warning: could not clear {sensor_id}: {r.status_code}")
+
+    print(f"Done — cleared {cleared}, skipped {skipped} (not registered in ThingsBoard).")
+
+
 def cmd_fetch(
     do_hour: bool = True,
     do_day: bool = True,
@@ -184,7 +226,7 @@ def cmd_report(scenario: str | None, window_ms: int, file: str | None = None,
     carryover = load_carryover()
     narrative = render_spoken_summary(summary, window_start_ms, window_end_ms, carryover)
     out_path  = save_spoken_summary(narrative, window_end_ms)
-    print(f"Sensor narrative saved → {out_path}\n")
+    print(f"Sensor narrative saved -> reports/{out_path.name}\n")
 
     print("Running safety audit…\n")
     result = audit(summary, window_start_ms=window_start_ms, window_end_ms=window_end_ms, debug=debug)
@@ -262,17 +304,20 @@ def main() -> None:
             "  python cli.py fetch --hour --out-hour h.json\n"
             "  python cli.py llm fetch_hour.json             # audit\n"
             "  python cli.py llm fetch_day.json --mode chat --query 'Did Mom eat today?'\n"
+            "  python cli.py clear                           # wipe all ThingsBoard telemetry\n"
+            "  python cli.py clear --scenario hazard         # wipe only hazard scenario sensors\n"
         ),
     )
     parser.add_argument(
         "command",
-        choices=["report", "chat", "summary", "fetch", "llm"],
+        choices=["report", "chat", "summary", "fetch", "llm", "clear"],
         help=(
             "'report' — Safety Auditor; "
             "'chat' — Narrator Q&A; "
             "'summary' — print raw sensor data; "
             "'fetch' — dump ThingsBoard data to JSON files; "
-            "'llm' — run LLM on a JSON file"
+            "'llm' — run LLM on a JSON file; "
+            "'clear' — delete all telemetry from ThingsBoard"
         ),
     )
     parser.add_argument(
@@ -322,7 +367,7 @@ def main() -> None:
     )
     # llm options
     parser.add_argument(
-        "file",
+        "llm_file",
         nargs="?",
         default=None,
         metavar="FILE",
@@ -364,6 +409,8 @@ def main() -> None:
         do_hour = args.hour or not args.day
         do_day  = args.day  or not args.hour
         cmd_fetch(do_hour, do_day, args.out_hour, args.out_day)
+    elif args.command == "clear":
+        cmd_clear(args.scenario)
 
 if __name__ == "__main__":
     main()

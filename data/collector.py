@@ -61,6 +61,24 @@ def get_all_rooms(window_ms=None) -> dict:
             raw[room][sensor_id] = get_telemetry(device_id, [sensor_id], token, window_ms)
     return raw
 
+def _norm_bool(val) -> bool:
+    """Normalise a boolean value that ThingsBoard may return as bool, str, or int."""
+    if isinstance(val, bool):
+        return val
+    if isinstance(val, str):
+        return val.strip().lower() not in ("false", "0", "")
+    return bool(val)
+
+
+def _is_bool_value(val) -> bool:
+    """Return True if val looks like a boolean (bool, or the strings 'true'/'false')."""
+    if isinstance(val, bool):
+        return True
+    if isinstance(val, str) and val.strip().lower() in ("true", "false"):
+        return True
+    return False
+
+
 def summarize(raw: dict, window_end_ms: int | None = None) -> dict:
     """
     For boolean/state sensors, find state transitions (False→True, True→False).
@@ -80,11 +98,15 @@ def summarize(raw: dict, window_end_ms: int | None = None) -> dict:
 
             first = values[0]["value"]
 
-            # Continuous sensor (ThingsBoard may return numbers as strings)
-            try:
-                is_continuous = not isinstance(first, bool) and float(first) is not None
-            except (ValueError, TypeError):
+            # Treat explicit booleans and "true"/"false" strings as boolean sensors.
+            # Otherwise attempt numeric (continuous) classification.
+            if _is_bool_value(first):
                 is_continuous = False
+            else:
+                try:
+                    is_continuous = float(first) is not None
+                except (ValueError, TypeError):
+                    is_continuous = False
 
             if is_continuous:
                 floats = [float(v["value"]) for v in values]
@@ -95,20 +117,19 @@ def summarize(raw: dict, window_end_ms: int | None = None) -> dict:
                     "avg": round(sum(floats) / len(floats), 2)
                 }
 
-            # Boolean/state sensor — extract transitions
-            elif not is_continuous:
+            else:
+                # Boolean/state sensor — normalise every value to Python bool so that
+                # mixed types from ThingsBoard (bool / str / int) don't create spurious
+                # transitions when compared with !=.
                 events = []
                 prev = None
                 for v in values:
-                    val = v["value"]
-                    ts  = v["ts"]  # millisecond timestamp
+                    val = _norm_bool(v["value"])
+                    ts  = v["ts"]
                     if val != prev:
                         events.append({"ts": ts, "value": val})
                         prev = val
 
-                # Compute durations between transitions.
-                # For the last event, use window_end_ms to get the remaining duration
-                # instead of leaving it as None.
                 annotated = []
                 for i, ev in enumerate(events):
                     if i + 1 < len(events):
@@ -125,7 +146,7 @@ def summarize(raw: dict, window_end_ms: int | None = None) -> dict:
 
                 result[room][sensor_id] = {
                     "type": "boolean",
-                    "current": values[-1]["value"],
+                    "current": _norm_bool(values[-1]["value"]),
                     "events": annotated
                 }
 

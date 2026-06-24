@@ -72,6 +72,6 @@ THRESHOLDS = {
 
 #  LLM
 LLM_HOST    = "http://localhost:11434"  # Ollama
-LLM_MODEL   = "gemma3:latest"
+LLM_MODEL   = "phi4-mini"
 MAX_TOKENS  = 512
 

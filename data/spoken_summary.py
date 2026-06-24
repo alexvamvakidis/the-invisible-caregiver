@@ -90,15 +90,14 @@ def _render_boolean(sensor_id: str, data: dict, carryover_sec: int | None) -> st
     for i in range(start_idx, len(events)):
         ev  = events[i]
         lbl = _val_label(sensor_id, ev["value"])
-        ts  = _ts_to_time(ev["ts"])
+        ts  = _ts_to_time(ev["ts"]) if "ts" in ev else ev.get("timestamp", "")[-8:]
         dur = ev.get("duration_sec")
 
         if i == 0:
-            # First event, no carryover applied
             if dur is not None:
-                parts.append(f"was {lbl} at {ts} for {_fmt_dur(dur)}")
+                parts.append(f"{lbl} at {ts} for {_fmt_dur(dur)}")
             else:
-                parts.append(f"was {lbl} at {ts} until end of window")
+                parts.append(f"{lbl} at {ts} until end of window")
         else:
             if dur is not None:
                 parts.append(f"then {lbl} for {_fmt_dur(dur)}")
