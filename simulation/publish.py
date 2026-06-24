@@ -21,12 +21,13 @@ import sys
 import time
 import argparse
 import paho.mqtt.client as mqtt
+import requests
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from config.settings import TB_HOST, TB_PORT_MQTT, TOKENS_PATH, SENSOR_DATA_DIR
+from config.settings import TB_HOST, TB_PORT_MQTT, TB_URL, TB_USERNAME, TB_PASSWORD, TOKENS_PATH, SENSOR_DATA_DIR
 
 TB_TOPIC = "v1/devices/me/telemetry"
 
@@ -105,7 +106,56 @@ def publish_reading(client, sensor_id, value, timestamp_dt):
     return "ok" if result.rc == mqtt.MQTT_ERR_SUCCESS else f"rc_{result.rc}"
 
 
-def publish(scenario, host, port, interval, dry_run):
+def get_rest_token():
+    r = requests.post(f"{TB_URL}/api/auth/login",
+                      json={"username": TB_USERNAME, "password": TB_PASSWORD})
+    r.raise_for_status()
+    return r.json()["token"]
+
+
+def get_device_id_map(token: str) -> dict:
+    page, page_size, name_to_id = 0, 100, {}
+    while True:
+        r = requests.get(
+            f"{TB_URL}/api/tenant/devices",
+            headers={"Authorization": f"Bearer {token}"},
+            params={"pageSize": page_size, "page": page},
+        )
+        r.raise_for_status()
+        data = r.json()
+        for device in data.get("data", []):
+            name_to_id[device["name"]] = device["id"]["id"]
+        if not data.get("hasNext", False):
+            break
+        page += 1
+    return name_to_id
+
+
+def clear_telemetry(sensor_ids: list[str]) -> None:
+    """Delete ALL stored telemetry for every sensor in sensor_ids via the ThingsBoard REST API."""
+    print("Clearing existing telemetry …")
+    token      = get_rest_token()
+    device_map = get_device_id_map(token)
+    headers    = {"Authorization": f"Bearer {token}"}
+    cleared, skipped = 0, 0
+    for sensor_id in sensor_ids:
+        device_id = device_map.get(sensor_id)
+        if not device_id:
+            skipped += 1
+            continue
+        r = requests.delete(
+            f"{TB_URL}/api/plugins/telemetry/DEVICE/{device_id}/timeseries/values",
+            headers=headers,
+            params={"keys": sensor_id, "deleteAllDataForKeys": "true"},
+        )
+        if r.ok:
+            cleared += 1
+        else:
+            print(f"  Warning: could not clear {sensor_id}: {r.status_code}")
+    print(f"  Cleared {cleared} sensor(s), skipped {skipped} (not registered).\n")
+
+
+def publish(scenario, host, port, interval, dry_run, clear):
     tokens = load_tokens()
 
     missing = [sid for sid, tok in tokens.items() if not tok]
@@ -116,6 +166,10 @@ def publish(scenario, host, port, interval, dry_run):
     meta, all_readings = load_sensor_data(scenario)
     if meta is None:
         return
+
+    if clear and not dry_run:
+        sensor_ids = list({r["sensor_id"] for r in all_readings})
+        clear_telemetry(sensor_ids)
 
     # Group readings by timestamp (chronological batches)
     groups = defaultdict(list)
@@ -185,6 +239,9 @@ if __name__ == "__main__":
                         help="Seconds between batches (default: 0 — bulk upload)")
     parser.add_argument("--dry-run", action="store_true",
                         help="Print readings without connecting to ThingsBoard")
+    parser.add_argument("--clear", action="store_true",
+                        help="Delete all existing telemetry for these sensors before publishing "
+                             "(avoids mixing data from multiple scenario runs)")
     args = parser.parse_args()
 
-    publish(args.scenario, args.host, args.port, args.interval, args.dry_run)
+    publish(args.scenario, args.host, args.port, args.interval, args.dry_run, args.clear)

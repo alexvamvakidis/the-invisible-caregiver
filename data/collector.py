@@ -61,11 +61,14 @@ def get_all_rooms(window_ms=None) -> dict:
             raw[room][sensor_id] = get_telemetry(device_id, [sensor_id], token, window_ms)
     return raw
 
-def summarize(raw: dict) -> dict:
+def summarize(raw: dict, window_end_ms: int | None = None) -> dict:
     """
     For boolean/state sensors, find state transitions (False→True, True→False).
     For continuous sensors, keep min/max/avg.
     Returns a structured dict per room per sensor.
+
+    window_end_ms: when provided, the last event's duration_sec is calculated as
+                   the time remaining until the window end instead of None.
     """
     result = {}
     for room, sensors in raw.items():
@@ -103,16 +106,21 @@ def summarize(raw: dict) -> dict:
                         events.append({"ts": ts, "value": val})
                         prev = val
 
-                # Compute durations between transitions
+                # Compute durations between transitions.
+                # For the last event, use window_end_ms to get the remaining duration
+                # instead of leaving it as None.
                 annotated = []
                 for i, ev in enumerate(events):
-                    duration_sec = None
                     if i + 1 < len(events):
-                        duration_sec = (events[i+1]["ts"] - ev["ts"]) // 1000
+                        duration_sec = (events[i + 1]["ts"] - ev["ts"]) // 1000
+                    elif window_end_ms is not None:
+                        duration_sec = max(0, (window_end_ms - ev["ts"]) // 1000)
+                    else:
+                        duration_sec = None
                     annotated.append({
                         "value": ev["value"],
                         "ts": ev["ts"],
-                        "duration_sec": duration_sec
+                        "duration_sec": duration_sec,
                     })
 
                 result[room][sensor_id] = {

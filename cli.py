@@ -72,35 +72,47 @@ def _iso_to_ms(ts_str: str) -> int:
         return 0
 
 
-def _load_scenario_summary(name: str, window_ms: int | None = None) -> dict:
+def _load_scenario_summary(name: str, window_ms: int | None = None) -> tuple[dict, int, int]:
     """
     Build a sensor summary from per-sensor JSON files in the scenario directory.
     Produces the same structure as data.collector.summarize() so both
     scenario mode and live mode feed identical data to the LLM.
 
-    window_ms: only include readings whose timestamp falls within the last
-               window_ms milliseconds relative to now (UTC).  None = all data.
+    window_ms: take the last window_ms milliseconds of the scenario data
+               (relative to the latest timestamp in the files, not wall-clock).
+               None = all data.
+
+    Returns (summary, window_start_ms, window_end_ms).
     """
-    import time as _time
     data_dir = Path(SCENARIO_FILES.get(name, ""))
     if not data_dir.exists():
         sys.exit(f"Error: scenario '{name}' not found at {data_dir}. "
                  f"Run 'python simulation/simulate.py {name}' first.")
 
-    now_ms     = int(_time.time() * 1000)
-    start_ms   = (now_ms - window_ms) if window_ms else 0
-
-    # Build raw in the exact format collector.get_all_rooms() produces:
-    # { room: { sensor_id: { sensor_id: [{ts: ms_int, value: v}, ...] } } }
-    raw: dict = {}
+    # First pass: collect all readings to find the max timestamp in the scenario.
+    all_files_data: list[tuple[str, str, list]] = []
+    max_ts = 0
     for json_file in sorted(data_dir.glob("*.json")):
         data = json.load(json_file.open())
         sensor_id = data["sensor_id"]
         room      = data.get("room", "unknown")
-        entries   = [
+        readings  = data.get("readings", [])
+        for r in readings:
+            ts = _iso_to_ms(r["timestamp"])
+            if ts > max_ts:
+                max_ts = ts
+        all_files_data.append((sensor_id, room, readings))
+
+    window_end_ms   = max_ts
+    window_start_ms = (max_ts - window_ms) if window_ms else 0
+
+    # Second pass: filter readings to the window.
+    raw: dict = {}
+    for sensor_id, room, readings in all_files_data:
+        entries = [
             {"ts": _iso_to_ms(r["timestamp"]), "value": r["value"]}
-            for r in data.get("readings", [])
-            if _iso_to_ms(r["timestamp"]) >= start_ms
+            for r in readings
+            if _iso_to_ms(r["timestamp"]) >= window_start_ms
         ]
         if entries:
             (raw
@@ -108,54 +120,79 @@ def _load_scenario_summary(name: str, window_ms: int | None = None) -> dict:
              .setdefault(sensor_id, {})[sensor_id]) = entries
 
     from data.collector import summarize
-    return summarize(raw)
+    return summarize(raw, window_end_ms=window_end_ms), window_start_ms, window_end_ms
 
 
-#  Live data loader 
-def _load_live_summary(window_ms: int) -> dict:
+#  Live data loader
+def _load_live_summary(window_ms: int) -> tuple[dict, int, int]:
+    import time as _time2
     from data.collector import get_all_rooms, summarize
+    now_ms = int(_time2.time() * 1000)
     raw = get_all_rooms(window_ms)
-    return summarize(raw)
+    return summarize(raw, window_end_ms=now_ms), now_ms - window_ms, now_ms
 
 
-#  Commands 
+#  Commands
 def cmd_fetch(
     do_hour: bool = True,
     do_day: bool = True,
     out_hour: str = "fetch_hour.json",
     out_day: str = "fetch_day.json",
 ) -> None:
+    import time as _time_fetch
     from data.collector import get_all_rooms, summarize
+
+    now_ms = int(_time_fetch.time() * 1000)
 
     if do_hour:
         print("Fetching 1-hour window from ThingsBoard…")
-        summary_hour = _annotate_ts(summarize(get_all_rooms(HISTORY_WINDOW_MS)))
+        summary_hour = _annotate_ts(summarize(get_all_rooms(HISTORY_WINDOW_MS), window_end_ms=now_ms))
         Path(out_hour).write_text(json.dumps(summary_hour, indent=2))
         print(f"  → {out_hour}")
 
     if do_day:
         print("Fetching 24-hour window from ThingsBoard…")
-        summary_day = _annotate_ts(summarize(get_all_rooms(NARRATOR_WINDOW_MS)))
+        summary_day = _annotate_ts(summarize(get_all_rooms(NARRATOR_WINDOW_MS), window_end_ms=now_ms))
         Path(out_day).write_text(json.dumps(summary_day, indent=2))
         print(f"  → {out_day}")
 
-def _load_summary(file: str | None, scenario: str | None, window_ms: int, label: str) -> dict:
+def _load_summary(file: str | None, scenario: str | None, window_ms: int,
+                  label: str) -> tuple[dict, int, int]:
+    """Returns (summary, window_start_ms, window_end_ms)."""
     if file:
+        import time as _time2
         path = Path(file)
         if not path.exists():
             sys.exit(f"Error: file not found: {file}")
         print(f"Loading sensor data from {file}…")
-        return json.loads(path.read_text())
+        now_ms = int(_time2.time() * 1000)
+        return json.loads(path.read_text()), now_ms - window_ms, now_ms
     print(f"Fetching sensor data ({label})…")
-    return _load_scenario_summary(scenario, window_ms) if scenario else _load_live_summary(window_ms)
+    if scenario:
+        return _load_scenario_summary(scenario, window_ms)
+    return _load_live_summary(window_ms)
 
 
-def cmd_report(scenario: str | None, window_ms: int, file: str | None = None) -> None:
+def cmd_report(scenario: str | None, window_ms: int, file: str | None = None,
+               show_raw: bool = False, debug: bool = False) -> None:
     """Requirement A — Safety Auditor (last 1 hour)."""
-    summary = _load_summary(file, scenario, window_ms, "last 1 hour")
+    summary, window_start_ms, window_end_ms = _load_summary(file, scenario, window_ms, "last 1 hour")
+
+    # Generate and save spoken-language narrative before running the audit.
+    from data.carryover import load_carryover
+    from data.spoken_summary import render_spoken_summary, save_spoken_summary
+    carryover = load_carryover()
+    narrative = render_spoken_summary(summary, window_start_ms, window_end_ms, carryover)
+    out_path  = save_spoken_summary(narrative, window_end_ms)
+    print(f"Sensor narrative saved → {out_path}\n")
 
     print("Running safety audit…\n")
-    result = audit(summary)
+    result = audit(summary, window_start_ms=window_start_ms, window_end_ms=window_end_ms, debug=debug)
+
+    if show_raw:
+        print("[raw LLM output]")
+        print(result.get("raw", ""))
+        print()
 
     alert    = result.get("alert", False)
     severity = result.get("severity", "none")
@@ -167,18 +204,17 @@ def cmd_report(scenario: str | None, window_ms: int, file: str | None = None) ->
     print("-" * len(tag))
     if issues:
         for issue in issues:
-            print(f"  • {issue}")
+            rule     = issue.get("rule", "?")
+            sev      = issue.get("severity", "?").upper()
+            detail   = issue.get("detail", "")
+            print(f"  • [{sev}] {rule}: {detail}")
     print()
     print(message)
-
-    if "raw" in result:
-        print("\n[debug] raw LLM output:")
-        print(result["raw"])
 
 
 def cmd_chat(scenario: str | None, window_ms: int, file: str | None = None, show_raw: bool = False) -> None:
     """Requirement B — The Narrator (last 24 hours, on-demand)."""
-    summary = _load_summary(file, scenario, window_ms, "last 24 hours")
+    summary, window_start_ms, window_end_ms = _load_summary(file, scenario, window_ms, "last 24 hours")
     print("Ready. Ask a question about Mary or type 'quit' to exit.\n")
     print("Example questions:")
     print("  Did Mom have a healthy morning?")
@@ -196,7 +232,8 @@ def cmd_chat(scenario: str | None, window_ms: int, file: str | None = None, show
         if not query or query.lower() in {"quit", "exit", "q"}:
             break
 
-        response, history = narrate(summary, query, history)
+        response, history = narrate(summary, query, history,
+                                    window_start_ms=window_start_ms, window_end_ms=window_end_ms)
 
         if show_raw:
             print(f"[raw] {repr(response)}")
@@ -308,12 +345,17 @@ def main() -> None:
         action="store_true",
         help="Print the raw LLM output before parsing (useful for debugging stuck responses)",
     )
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Print the full prompts sent to the LLM and the raw response with byte count",
+    )
 
     args = parser.parse_args()
 
     if args.command == "report":
         window = args.window_ms if args.window_ms is not None else HISTORY_WINDOW_MS
-        cmd_report(args.scenario, window, file=args.file)
+        cmd_report(args.scenario, window, file=args.file, show_raw=args.raw, debug=args.debug)
     elif args.command == "chat":
         window = args.window_ms if args.window_ms is not None else NARRATOR_WINDOW_MS
         cmd_chat(args.scenario, window, file=args.file, show_raw=args.raw)
