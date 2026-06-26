@@ -59,14 +59,14 @@ BASELINE = {
     "sofa_pressure_2":            False,
     "tv_plug":                    False,
     "entrance_motion":            False,
-    "entrance_door":              True,
+    "entrance_door":              False,
     "kitchen_motion":             False,
     "kitchen_temperature":        21.0,
     "stove_power":                False,
     "smoke_detector":             False,
-    "fridge_door":                True,
-    "kitchen_faucet":             True,
-    "kitchen_medication_cabinet": True,
+    "fridge_door":                False,
+    "kitchen_faucet":             False,
+    "kitchen_medication_cabinet": False,
 }
 
 _SEEDS     = {"normal": 42, "decline": 43, "hazard": 44}

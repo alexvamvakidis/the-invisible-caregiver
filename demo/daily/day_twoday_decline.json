@@ -1,0 +1,217 @@
+{
+  "bedroom": {
+    "bed_pressure": {
+      "type": "boolean", "current": true,
+      "events": [
+        {"value": true,  "ts": 1782248400000, "duration_sec": 25200},
+        {"value": false, "ts": 1782273600000, "duration_sec": 50400},
+        {"value": true,  "ts": 1782324000000, "duration_sec": 19800},
+        {"value": false, "ts": 1782343800000, "duration_sec": 300},
+        {"value": true,  "ts": 1782344100000, "duration_sec": 23100},
+        {"value": false, "ts": 1782367200000, "duration_sec": 41400},
+        {"value": true,  "ts": 1782408600000, "duration_sec": 12600}
+      ]
+    },
+    "bedroom_motion": {
+      "type": "boolean", "current": false,
+      "events": [
+        {"value": false, "ts": 1782248400000, "duration_sec": 25200},
+        {"value": true,  "ts": 1782273600000, "duration_sec": 300},
+        {"value": false, "ts": 1782273900000, "duration_sec": 50100},
+        {"value": true,  "ts": 1782324000000, "duration_sec": 300},
+        {"value": false, "ts": 1782324300000, "duration_sec": 19500},
+        {"value": true,  "ts": 1782343800000, "duration_sec": 120},
+        {"value": false, "ts": 1782343920000, "duration_sec": 23280},
+        {"value": true,  "ts": 1782367200000, "duration_sec": 480},
+        {"value": false, "ts": 1782367680000, "duration_sec": 40920},
+        {"value": true,  "ts": 1782408600000, "duration_sec": 300},
+        {"value": false, "ts": 1782408900000, "duration_sec": 12300}
+      ]
+    },
+    "bedroom_lamp_plug": {
+      "type": "boolean", "current": false,
+      "events": [
+        {"value": false, "ts": 1782248400000, "duration_sec": 25260},
+        {"value": true,  "ts": 1782273660000, "duration_sec": 540},
+        {"value": false, "ts": 1782274200000, "duration_sec": 49860},
+        {"value": true,  "ts": 1782324060000, "duration_sec": 900},
+        {"value": false, "ts": 1782324960000, "duration_sec": 42540},
+        {"value": true,  "ts": 1782367500000, "duration_sec": 600},
+        {"value": false, "ts": 1782368100000, "duration_sec": 53100}
+      ]
+    },
+    "bedroom_temperature": {"type": "continuous", "min": 19.3, "max": 23.1, "avg": 21.0}
+  },
+  "bathroom": {
+    "bathroom_motion": {
+      "type": "boolean", "current": false,
+      "events": [
+        {"value": false, "ts": 1782248400000, "duration_sec": 25500},
+        {"value": true,  "ts": 1782273900000, "duration_sec": 1860},
+        {"value": false, "ts": 1782275760000, "duration_sec": 24840},
+        {"value": true,  "ts": 1782300600000, "duration_sec": 300},
+        {"value": false, "ts": 1782300900000, "duration_sec": 23400},
+        {"value": true,  "ts": 1782324300000, "duration_sec": 240},
+        {"value": false, "ts": 1782324540000, "duration_sec": 19260},
+        {"value": true,  "ts": 1782343800000, "duration_sec": 300},
+        {"value": false, "ts": 1782344100000, "duration_sec": 23700},
+        {"value": true,  "ts": 1782367800000, "duration_sec": 420},
+        {"value": false, "ts": 1782368220000, "duration_sec": 38880},
+        {"value": true,  "ts": 1782407100000, "duration_sec": 300},
+        {"value": false, "ts": 1782407400000, "duration_sec": 13800}
+      ]
+    },
+    "toilet_pressure": {
+      "type": "boolean", "current": false,
+      "events": [
+        {"value": false, "ts": 1782248400000, "duration_sec": 25560},
+        {"value": true,  "ts": 1782273960000, "duration_sec": 840},
+        {"value": false, "ts": 1782274800000, "duration_sec": 25800},
+        {"value": true,  "ts": 1782300600000, "duration_sec": 300},
+        {"value": false, "ts": 1782300900000, "duration_sec": 23220},
+        {"value": true,  "ts": 1782324120000, "duration_sec": 300},
+        {"value": false, "ts": 1782324420000, "duration_sec": 19500},
+        {"value": true,  "ts": 1782343920000, "duration_sec": 300},
+        {"value": false, "ts": 1782344220000, "duration_sec": 23700},
+        {"value": true,  "ts": 1782367920000, "duration_sec": 300},
+        {"value": false, "ts": 1782368220000, "duration_sec": 38880},
+        {"value": true,  "ts": 1782407100000, "duration_sec": 300},
+        {"value": false, "ts": 1782407400000, "duration_sec": 13800}
+      ]
+    },
+    "bathroom_water_flow": {
+      "type": "boolean", "current": false,
+      "events": [
+        {"value": false, "ts": 1782248400000, "duration_sec": 25680},
+        {"value": true,  "ts": 1782274080000, "duration_sec": 960},
+        {"value": false, "ts": 1782275040000, "duration_sec": 146160}
+      ]
+    },
+    "bathroom_shower_water_temp": {"type": "continuous", "min": 38.5, "max": 43.2, "avg": 41.2},
+    "bathroom_temperature":       {"type": "continuous", "min": 19.8, "max": 26.1, "avg": 21.2},
+    "bathroom_humidity":          {"type": "continuous", "min": 46.3, "max": 82.4, "avg": 51.7}
+  },
+  "kitchen": {
+    "kitchen_motion": {
+      "type": "boolean", "current": false,
+      "events": [
+        {"value": false, "ts": 1782248400000, "duration_sec": 27480},
+        {"value": true,  "ts": 1782275880000, "duration_sec": 1320},
+        {"value": false, "ts": 1782277200000, "duration_sec": 16200},
+        {"value": true,  "ts": 1782293400000, "duration_sec": 1800},
+        {"value": false, "ts": 1782295200000, "duration_sec": 5400},
+        {"value": true,  "ts": 1782300600000, "duration_sec": 300},
+        {"value": false, "ts": 1782300900000, "duration_sec": 68100},
+        {"value": true,  "ts": 1782369000000, "duration_sec": 900},
+        {"value": false, "ts": 1782369900000, "duration_sec": 1200},
+        {"value": true,  "ts": 1782371100000, "duration_sec": 600},
+        {"value": false, "ts": 1782371700000, "duration_sec": 6600},
+        {"value": true,  "ts": 1782378300000, "duration_sec": 300},
+        {"value": false, "ts": 1782378600000, "duration_sec": 42600}
+      ]
+    },
+    "stove_power": {
+      "type": "boolean", "current": false,
+      "events": [
+        {"value": false, "ts": 1782248400000, "duration_sec": 27960},
+        {"value": true,  "ts": 1782276360000, "duration_sec": 660},
+        {"value": false, "ts": 1782277020000, "duration_sec": 16680},
+        {"value": true,  "ts": 1782293700000, "duration_sec": 1200},
+        {"value": false, "ts": 1782294900000, "duration_sec": 5820},
+        {"value": true,  "ts": 1782300720000, "duration_sec": 120},
+        {"value": false, "ts": 1782300840000, "duration_sec": 70260},
+        {"value": true,  "ts": 1782371100000, "duration_sec": 7200},
+        {"value": false, "ts": 1782378300000, "duration_sec": 42900}
+      ]
+    },
+    "fridge_door": {
+      "type": "boolean", "current": false,
+      "events": [
+        {"value": false, "ts": 1782248400000, "duration_sec": 27540},
+        {"value": true,  "ts": 1782275940000, "duration_sec": 180},
+        {"value": false, "ts": 1782276120000, "duration_sec": 17280},
+        {"value": true,  "ts": 1782293400000, "duration_sec": 120},
+        {"value": false, "ts": 1782293520000, "duration_sec": 75900},
+        {"value": true,  "ts": 1782369420000, "duration_sec": 180},
+        {"value": false, "ts": 1782369600000, "duration_sec": 51600}
+      ]
+    },
+    "smoke_detector": {
+      "type": "boolean", "current": false,
+      "events": [
+        {"value": false, "ts": 1782248400000, "duration_sec": 127800},
+        {"value": true,  "ts": 1782376200000, "duration_sec": 480},
+        {"value": false, "ts": 1782376680000, "duration_sec": 44520}
+      ]
+    },
+    "kitchen_faucet": {
+      "type": "boolean", "current": false,
+      "events": [
+        {"value": false, "ts": 1782248400000, "duration_sec": 27660},
+        {"value": true,  "ts": 1782276060000, "duration_sec": 120},
+        {"value": false, "ts": 1782276180000, "duration_sec": 93060},
+        {"value": true,  "ts": 1782369240000, "duration_sec": 120},
+        {"value": false, "ts": 1782369360000, "duration_sec": 51840}
+      ]
+    },
+    "kitchen_medication_cabinet": {
+      "type": "boolean", "current": false,
+      "events": [
+        {"value": false, "ts": 1782248400000, "duration_sec": 28320},
+        {"value": true,  "ts": 1782276720000, "duration_sec": 120},
+        {"value": false, "ts": 1782276840000, "duration_sec": 144360}
+      ]
+    },
+    "kitchen_temperature": {"type": "continuous", "min": 19.2, "max": 44.7, "avg": 24.3}
+  },
+  "living_room": {
+    "living_motion": {
+      "type": "boolean", "current": false,
+      "events": [
+        {"value": false, "ts": 1782248400000, "duration_sec": 28800},
+        {"value": true,  "ts": 1782277200000, "duration_sec": 16200},
+        {"value": false, "ts": 1782293400000, "duration_sec": 1800},
+        {"value": true,  "ts": 1782295200000, "duration_sec": 5400},
+        {"value": false, "ts": 1782300600000, "duration_sec": 300},
+        {"value": true,  "ts": 1782300900000, "duration_sec": 23100},
+        {"value": false, "ts": 1782324000000, "duration_sec": 54600},
+        {"value": true,  "ts": 1782378600000, "duration_sec": 30000},
+        {"value": false, "ts": 1782408600000, "duration_sec": 12600}
+      ]
+    },
+    "sofa_pressure": {
+      "type": "boolean", "current": false,
+      "events": [
+        {"value": false, "ts": 1782248400000, "duration_sec": 28800},
+        {"value": true,  "ts": 1782277200000, "duration_sec": 45600},
+        {"value": false, "ts": 1782322800000, "duration_sec": 56580},
+        {"value": true,  "ts": 1782379380000, "duration_sec": 29220},
+        {"value": false, "ts": 1782408600000, "duration_sec": 12600}
+      ]
+    },
+    "sofa_pressure_2": {
+      "type": "boolean", "current": false,
+      "events": [{"value": false, "ts": 1782248400000, "duration_sec": 172800}]
+    },
+    "tv_plug": {
+      "type": "boolean", "current": false,
+      "events": [
+        {"value": false, "ts": 1782248400000, "duration_sec": 28800},
+        {"value": true,  "ts": 1782277200000, "duration_sec": 45600},
+        {"value": false, "ts": 1782322800000, "duration_sec": 56760},
+        {"value": true,  "ts": 1782379560000, "duration_sec": 29040},
+        {"value": false, "ts": 1782408600000, "duration_sec": 12600}
+      ]
+    }
+  },
+  "entrance": {
+    "entrance_door": {
+      "type": "boolean", "current": false,
+      "events": [{"value": false, "ts": 1782248400000, "duration_sec": 172800}]
+    },
+    "entrance_motion": {
+      "type": "boolean", "current": false,
+      "events": [{"value": false, "ts": 1782248400000, "duration_sec": 172800}]
+    }
+  }
+}

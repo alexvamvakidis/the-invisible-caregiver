@@ -1,0 +1,106 @@
+{
+  "bathroom": {
+    "bathroom_motion": {
+      "type": "boolean", "current": false,
+      "events": [
+        {"value": false, "ts": 1782360000000, "duration_sec": 300},
+        {"value": true,  "ts": 1782360300000, "duration_sec": 1860},
+        {"value": false, "ts": 1782362160000, "duration_sec": 1440}
+      ]
+    },
+    "toilet_pressure": {
+      "type": "boolean", "current": false,
+      "events": [
+        {"value": false, "ts": 1782360000000, "duration_sec": 360},
+        {"value": true,  "ts": 1782360360000, "duration_sec": 840},
+        {"value": false, "ts": 1782361200000, "duration_sec": 2400}
+      ]
+    },
+    "bathroom_water_flow": {
+      "type": "boolean", "current": false,
+      "events": [
+        {"value": false, "ts": 1782360000000, "duration_sec": 480},
+        {"value": true,  "ts": 1782360480000, "duration_sec": 960},
+        {"value": false, "ts": 1782361440000, "duration_sec": 2160}
+      ]
+    },
+    "bathroom_shower_water_temp": {"type": "continuous", "min": 38.5, "max": 43.2, "avg": 41.2},
+    "bathroom_temperature":       {"type": "continuous", "min": 21.3, "max": 23.8, "avg": 22.5},
+    "bathroom_humidity":          {"type": "continuous", "min": 52.1, "max": 78.4, "avg": 65.3}
+  },
+  "bedroom": {
+    "bed_pressure": {
+      "type": "boolean", "current": false,
+      "events": [{"value": false, "ts": 1782360000000, "duration_sec": 3600}]
+    },
+    "bedroom_motion": {
+      "type": "boolean", "current": false,
+      "events": [
+        {"value": true,  "ts": 1782360000000, "duration_sec": 300},
+        {"value": false, "ts": 1782360300000, "duration_sec": 3300}
+      ]
+    },
+    "bedroom_lamp_plug": {
+      "type": "boolean", "current": false,
+      "events": [
+        {"value": true,  "ts": 1782360000000, "duration_sec": 540},
+        {"value": false, "ts": 1782360540000, "duration_sec": 3060}
+      ]
+    },
+    "bedroom_temperature": {"type": "continuous", "min": 20.8, "max": 22.1, "avg": 21.4}
+  },
+  "kitchen": {
+    "kitchen_motion": {
+      "type": "boolean", "current": true,
+      "events": [
+        {"value": false, "ts": 1782360000000, "duration_sec": 2280},
+        {"value": true,  "ts": 1782362280000, "duration_sec": 420},
+        {"value": false, "ts": 1782362700000, "duration_sec": 600},
+        {"value": true,  "ts": 1782363300000, "duration_sec": 300}
+      ]
+    },
+    "stove_power": {
+      "type": "boolean", "current": false,
+      "events": [
+        {"value": false, "ts": 1782360000000, "duration_sec": 2760},
+        {"value": true,  "ts": 1782362760000, "duration_sec": 660},
+        {"value": false, "ts": 1782363420000, "duration_sec": 180}
+      ]
+    },
+    "fridge_door": {
+      "type": "boolean", "current": false,
+      "events": [
+        {"value": false, "ts": 1782360000000, "duration_sec": 2340},
+        {"value": true,  "ts": 1782362340000, "duration_sec": 180},
+        {"value": false, "ts": 1782362520000, "duration_sec": 1080}
+      ]
+    },
+    "smoke_detector": {
+      "type": "boolean", "current": false,
+      "events": [{"value": false, "ts": 1782360000000, "duration_sec": 3600}]
+    },
+    "kitchen_faucet": {
+      "type": "boolean", "current": false,
+      "events": [{"value": false, "ts": 1782360000000, "duration_sec": 3600}]
+    },
+    "kitchen_medication_cabinet": {
+      "type": "boolean", "current": false,
+      "events": [
+        {"value": false, "ts": 1782360000000, "duration_sec": 3120},
+        {"value": true,  "ts": 1782363120000, "duration_sec": 120},
+        {"value": false, "ts": 1782363240000, "duration_sec": 360}
+      ]
+    },
+    "kitchen_temperature": {"type": "continuous", "min": 19.8, "max": 22.3, "avg": 20.9}
+  },
+  "living_room": {
+    "living_motion":   {"type": "boolean", "current": false, "events": [{"value": false, "ts": 1782360000000, "duration_sec": 3600}]},
+    "sofa_pressure":   {"type": "boolean", "current": false, "events": [{"value": false, "ts": 1782360000000, "duration_sec": 3600}]},
+    "sofa_pressure_2": {"type": "boolean", "current": false, "events": [{"value": false, "ts": 1782360000000, "duration_sec": 3600}]},
+    "tv_plug":         {"type": "boolean", "current": false, "events": [{"value": false, "ts": 1782360000000, "duration_sec": 3600}]}
+  },
+  "entrance": {
+    "entrance_motion": {"type": "boolean", "current": false, "events": [{"value": false, "ts": 1782360000000, "duration_sec": 3600}]},
+    "entrance_door":   {"type": "boolean", "current": false, "events": [{"value": false, "ts": 1782360000000, "duration_sec": 3600}]}
+  }
+}

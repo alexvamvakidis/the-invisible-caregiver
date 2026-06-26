@@ -5,24 +5,20 @@ from datetime import datetime
 from pathlib import Path
 from llm.prompts import SAFETY_AUDITOR_SYSTEM, AUDIT_USER, NARRATOR_SYSTEM, NARRATOR_USER
 from llm.parser import parse_audit_response
-from data.carryover import compute_carryover, save_carryover, load_carryover, format_carryover_section
-from data.spoken_summary import render_spoken_summary, format_as_text
 from config.settings import LLM_HOST, LLM_MODEL, MAX_TOKENS
 
 _ROOT = Path(__file__).parent.parent
 _AUDIT_PROMPT_PATH = _ROOT / "last_audit_prompt.json"
-
-# Carryover is stale if the previous window ended more than 70 min before this window's start.
-_CARRYOVER_STALENESS_MS = 70 * 60 * 1000
 
 
 def _call(system: str, messages: list, json_mode: bool = False) -> tuple[str, list]:
     """Send messages to Ollama. Returns (reply_text, updated_messages)."""
     payload_messages = [{"role": "system", "content": system}] + messages
     body = {
-        "model": LLM_MODEL,
-        "stream": False,
-        "options": {"num_predict": MAX_TOKENS},
+        "model":    LLM_MODEL,
+        "stream":   False,
+        "think":    False,
+        "options":  {"num_predict": MAX_TOKENS},
         "messages": payload_messages,
     }
     if json_mode:
@@ -34,11 +30,10 @@ def _call(system: str, messages: list, json_mode: bool = False) -> tuple[str, li
 
 
 def _tz_label() -> str:
-    """Return a human-readable timezone label, e.g. 'EEST (UTC+3)'."""
     local_dt = datetime.now().astimezone()
-    offset   = local_dt.utcoffset().total_seconds()
-    sign     = "+" if offset >= 0 else "-"
-    h, m     = divmod(int(abs(offset)), 3600)
+    offset = local_dt.utcoffset().total_seconds()
+    sign = "+" if offset >= 0 else "-"
+    h, m = divmod(int(abs(offset)), 3600)
     m //= 60
     offset_str = f"UTC{sign}{h}" if m == 0 else f"UTC{sign}{h}:{m:02d}"
     name = local_dt.tzname() or offset_str
@@ -46,7 +41,6 @@ def _tz_label() -> str:
 
 
 def _build_window_context(window_start_ms: int, window_end_ms: int) -> dict:
-    """Build the time-context dict that is injected into every LLM prompt."""
     duration_sec = (window_end_ms - window_start_ms) // 1000
     return {
         "window_start":     datetime.fromtimestamp(window_start_ms / 1000).strftime("%Y-%m-%d %H:%M:%S"),
@@ -58,56 +52,43 @@ def _build_window_context(window_start_ms: int, window_end_ms: int) -> dict:
 
 
 def audit(
-    summary: dict,
-    window_start_ms: int | None = None,
-    window_end_ms:   int | None = None,
+    spoken_text: str,
+    window_start_ms: int,
+    window_end_ms: int,
     debug: bool = False,
 ) -> dict:
     """
     Requirement A — Safety Auditor (cron every 60 min).
-    Input:  1-hour sensor summary organised by room.
-    Output: structured alert dict {alert, severity, issues, message, summary}.
+    Input:  spoken-text narrative produced by data.pipeline.run().
+    Output: structured alert dict {alert, severity, issues, message}.
     """
-    total_sensors = sum(len(v) for v in summary.values())
-    if total_sensors == 0:
+    if not spoken_text.strip():
         return {
             "alert":    False,
             "severity": "none",
             "issues":   [],
             "message":  "No sensor data available. Publish readings to ThingsBoard first.",
-            "summary":  {},
         }
 
-    now_ms = int(time.time() * 1000)
-    if window_end_ms is None:
-        window_end_ms = now_ms
-    if window_start_ms is None:
-        window_start_ms = window_end_ms - 3_600_000
-
     window_ctx = _build_window_context(window_start_ms, window_end_ms)
-
-    carryover = load_carryover()
-    if carryover and abs(carryover.get("window_end_ts", 0) - window_start_ms) > _CARRYOVER_STALENESS_MS:
-        carryover = None  # stale — gap between windows is too large
-
-    narrative     = render_spoken_summary(summary, window_start_ms, window_end_ms, carryover)
-    narrative_txt = format_as_text(narrative)
-
     user_text = AUDIT_USER.format(
-        window_context=json.dumps(window_ctx, indent=2),
-        summary=narrative_txt,
+        window_start=window_ctx["window_start"],
+        window_end=window_ctx["window_end"],
+        summary=spoken_text,
     )
 
-    prompt_payload = {
-        "called_at": datetime.now().isoformat(),
-        "window_context": window_ctx,
-        "model": LLM_MODEL,
-        "messages": [
-            {"role": "system", "content": SAFETY_AUDITOR_SYSTEM},
-            {"role": "user",   "content": user_text},
-        ],
-    }
-    _AUDIT_PROMPT_PATH.write_text(json.dumps(prompt_payload, indent=2, ensure_ascii=False), encoding="utf-8")
+    _AUDIT_PROMPT_PATH.write_text(
+        json.dumps({
+            "called_at":      datetime.now().isoformat(),
+            "window_context": window_ctx,
+            "model":          LLM_MODEL,
+            "messages": [
+                {"role": "system", "content": SAFETY_AUDITOR_SYSTEM},
+                {"role": "user",   "content": user_text},
+            ],
+        }, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
 
     if debug:
         print("=== SYSTEM PROMPT ===")
@@ -116,37 +97,34 @@ def audit(
         print(user_text)
         print("=== END PROMPTS ===\n")
 
-    raw, _ = _call(SAFETY_AUDITOR_SYSTEM, [{"role": "user", "content": user_text}], json_mode=True)
+    raw, _ = _call(SAFETY_AUDITOR_SYSTEM, [{"role": "user", "content": user_text}], json_mode=False)
 
     if debug:
         print(f"=== RAW RESPONSE ({len(raw)} chars) ===")
         print(repr(raw))
         print("=== END RAW ===\n")
 
-    result = parse_audit_response(raw)
-    save_carryover(compute_carryover(summary, window_start_ms, window_end_ms, prev_carryover=carryover))
-    return result
+    return parse_audit_response(raw)
 
 
 def narrate(
-    summary: dict,
+    spoken_text: str,
     query: str,
     history: list | None = None,
     window_start_ms: int | None = None,
-    window_end_ms:   int | None = None,
+    window_end_ms: int | None = None,
 ) -> tuple[str, list]:
     """
     Requirement B — The Narrator (on-demand caretaker chat).
-    Input:  24-hour sensor summary + caretaker's question + optional prior history.
+    Input:  spoken-text narrative produced by data.pipeline.run() + caretaker's question.
     Output: (reply_text, updated_history) — pass updated_history into the next call.
     """
-    total_sensors = sum(len(v) for v in summary.values())
-    if total_sensors == 0:
-        msg = (
-            "I'm sorry, but I don't have any sensor data available for the last 24 hours. "
-            "Please make sure the sensors are active and publishing readings, then try again."
+    if not spoken_text.strip():
+        return (
+            "I'm sorry, but I don't have any sensor data available for this period. "
+            "Please make sure the sensors are active and publishing readings, then try again.",
+            history or [],
         )
-        return msg, history or []
 
     now_ms = int(time.time() * 1000)
     if window_end_ms is None:
@@ -154,13 +132,14 @@ def narrate(
     if window_start_ms is None:
         window_start_ms = window_end_ms - 86_400_000
 
-    window_ctx    = _build_window_context(window_start_ms, window_end_ms)
-    narrative_txt = format_as_text(render_spoken_summary(summary, window_start_ms, window_end_ms))
+    window_ctx = _build_window_context(window_start_ms, window_end_ms)
 
     if not history:
         first_msg = NARRATOR_USER.format(
-            window_context=json.dumps(window_ctx, indent=2),
-            summary=narrative_txt,
+            window_start=window_ctx["window_start"],
+            window_end=window_ctx["window_end"],
+            timezone=window_ctx["timezone"],
+            summary=spoken_text,
             query=query,
         )
         messages = [{"role": "user", "content": first_msg}]

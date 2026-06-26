@@ -110,6 +110,11 @@ def compute_carryover(
     }
 
 
+def clear_carryover() -> None:
+    if CARRYOVER_PATH.exists():
+        CARRYOVER_PATH.unlink()
+
+
 def save_carryover(state: dict) -> None:
     CARRYOVER_PATH.write_text(json.dumps(state, indent=2))
 
